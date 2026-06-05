@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starweave.mapper.MessageMapper">
+
+    <resultMap id="BaseMap" type="Message">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="content" property="content"/>
+        <result column="color" property="color"/>
+        <result column="status" property="status"/>
+        <result column="review_reason" property="reviewReason"/>
+        <result column="heal_tag" property="healTag"/>
+        <result column="healing_message" property="healingMessage"/>
+        <result column="wish_count" property="wishCount"/>
+        <result column="is_caught" property="isCaught"/>
+        <result column="caught_by" property="caughtBy"/>
+        <result column="caught_at" property="caughtAt"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseMap">
+        SELECT * FROM message WHERE id = #{id}
+    </select>
+
+    <select id="findByIds" resultMap="BaseMap">
+        SELECT * FROM message WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </select>
+
+    <select id="findFloating" resultMap="BaseMap">
+        SELECT * FROM message
+        WHERE status = 'approved' AND is_caught = 0
+        ORDER BY created_at DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="findByUserId" resultMap="BaseMap">
+        SELECT * FROM message WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="findByCatcher" resultMap="BaseMap">
+        SELECT * FROM message WHERE caught_by = #{userId} ORDER BY caught_at DESC
+    </select>
+
+    <select id="findPending" resultMap="BaseMap">
+        SELECT * FROM message WHERE status = 'pending' ORDER BY created_at ASC
+    </select>
+
+    <select id="findRandomApproved" resultMap="BaseMap">
+        SELECT * FROM message
+        WHERE status = 'approved' AND is_caught = 0
+        <if test="excludeUserId != null">AND user_id != #{excludeUserId}</if>
+        ORDER BY id LIMIT 1 OFFSET #{offset}
+    </select>
+
+    <select id="countApproved" resultType="long">
+        SELECT COUNT(*) FROM message WHERE status = 'approved' AND is_caught = 0
+        <if test="excludeUserId != null">AND user_id != #{excludeUserId}</if>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO message (user_id, content, color, status)
+        VALUES (#{userId}, #{content}, #{color}, 'pending')
+    </insert>
+
+    <update id="updateStatus">
+        UPDATE message
+        SET status = #{status}, review_reason = #{reason},
+            heal_tag = #{healTag}, healing_message = #{healingMessage}
+        WHERE id = #{id}
+    </update>
+
+    <update id="incrementWishCount">
+        UPDATE message SET wish_count = wish_count + 1 WHERE id = #{id}
+    </update>
+
+    <update id="catchMessage">
+        UPDATE message
+        SET is_caught = 1, caught_by = #{userId}, caught_at = NOW()
+        WHERE id = #{id} AND is_caught = 0 AND user_id != #{userId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM message WHERE id = #{id}
+    </delete>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM message
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM message WHERE user_id = #{userId}
+    </select>
+
+    <select id="countCaughtByUserId" resultType="long">
+        SELECT COUNT(*) FROM message WHERE caught_by = #{userId}
+    </select>
+
+    <select id="findAll" resultMap="BaseMap">
+        SELECT * FROM message
+        <where>
+            <if test="status != null">status = #{status}</if>
+        </where>
+        ORDER BY created_at DESC
+    </select>
+
+    <select id="countByStatus" resultType="long">
+        SELECT COUNT(*) FROM message
+        <where>
+            <if test="status != null">status = #{status}</if>
+        </where>
+    </select>
+</mapper>

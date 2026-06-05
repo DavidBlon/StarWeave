@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starweave.mapper.CatchHistoryMapper">
+
+    <resultMap id="BaseMap" type="CatchHistory">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="meteor_id" property="meteorId"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseMap">
+        SELECT * FROM catch_history WHERE id = #{id}
+    </select>
+
+    <select id="findByUserId" resultMap="BaseMap">
+        SELECT * FROM catch_history WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="findByMeteorId" resultMap="BaseMap">
+        SELECT * FROM catch_history WHERE meteor_id = #{meteorId} ORDER BY created_at DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO catch_history (user_id, meteor_id)
+        VALUES (#{userId}, #{meteorId})
+    </insert>
+
+    <delete id="deleteByMeteorId">
+        DELETE FROM catch_history WHERE meteor_id = #{meteorId}
+    </delete>
+</mapper>

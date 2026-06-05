@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starweave.mapper.StarMapMapper">
+
+    <resultMap id="BaseMap" type="StarMap">
+        <id column="id" property="id"/>
+        <result column="message_id" property="messageId"/>
+        <result column="user_id" property="userId"/>
+        <result column="content_hash" property="contentHash"/>
+        <result column="image_url" property="imageUrl"/>
+        <result column="image_hd_url" property="imageHdUrl"/>
+        <result column="is_premium" property="isPremium"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseMap">
+        SELECT * FROM star_map WHERE id = #{id}
+    </select>
+
+    <select id="findByMessageId" resultMap="BaseMap">
+        SELECT * FROM star_map WHERE message_id = #{messageId}
+    </select>
+
+    <select id="findByUserId" resultMap="BaseMap">
+        SELECT * FROM star_map WHERE user_id = #{userId} ORDER BY created_at DESC
+    </select>
+
+    <select id="findByHash" resultMap="BaseMap">
+        SELECT * FROM star_map WHERE content_hash = #{contentHash}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO star_map (message_id, user_id, content_hash, image_url, image_hd_url, is_premium)
+        VALUES (#{messageId}, #{userId}, #{contentHash}, #{imageUrl}, #{imageHdUrl}, #{isPremium})
+    </insert>
+
+    <update id="unlockPremium">
+        UPDATE star_map SET is_premium = 1, image_hd_url = #{imageHdUrl} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM star_map WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByMessageId">
+        DELETE FROM star_map WHERE message_id = #{messageId}
+    </delete>
+</mapper>

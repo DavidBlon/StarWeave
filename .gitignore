@@ -1,0 +1,43 @@
+# Java / Maven
+backend/target/
+*.class
+*.jar
+*.war
+
+# Node
+frontend/node_modules/
+frontend/dist/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.log.*
+*.gz
+logs/
+backend/logs/
+
+# User uploads
+uploads/
+backend/uploads/
+
+# Nginx
+nginx-1.30.0/
+
+# Superpowers
+.superpowers/
+
+# Binaries
+cpolar
+coplar
+*.exe
+
+# Star map demo
+star-map-demo.html

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starweave.mapper.UserMapper">
+
+    <resultMap id="BaseMap" type="User">
+        <id column="id" property="id"/>
+        <result column="username" property="username"/>
+        <result column="nickname" property="nickname"/>
+        <result column="avatar_url" property="avatarUrl"/>
+        <result column="password_hash" property="passwordHash"/>
+        <result column="bio" property="bio"/>
+        <result column="border_style" property="borderStyle"/>
+        <result column="is_sponsor" property="isSponsor"/>
+        <result column="is_admin" property="isAdmin"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseMap">
+        SELECT * FROM `user` WHERE id = #{id}
+    </select>
+
+    <select id="findByNickname" resultMap="BaseMap">
+        SELECT * FROM `user` WHERE nickname = #{nickname}
+    </select>
+
+    <select id="findByUsername" resultMap="BaseMap">
+        SELECT * FROM `user` WHERE username = #{username}
+    </select>
+
+    <select id="findAll" resultMap="BaseMap">
+        SELECT * FROM `user` ORDER BY created_at DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO `user` (username, nickname, avatar_url, password_hash, bio, border_style, is_sponsor, is_admin)
+        VALUES (#{username}, #{nickname}, #{avatarUrl}, #{passwordHash}, #{bio}, #{borderStyle}, #{isSponsor}, #{isAdmin})
+    </insert>
+
+    <update id="update">
+        UPDATE `user`
+        <set>
+            <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="avatarUrl != null">avatar_url = #{avatarUrl},</if>
+            <if test="passwordHash != null">password_hash = #{passwordHash},</if>
+            <if test="bio != null">bio = #{bio},</if>
+            <if test="borderStyle != null">border_style = #{borderStyle},</if>
+            <if test="isSponsor != null">is_sponsor = #{isSponsor},</if>
+            <if test="isAdmin != null">is_admin = #{isAdmin},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateBorderStyle">
+        UPDATE `user` SET border_style = #{borderStyle} WHERE id = #{id}
+    </update>
+
+    <update id="setSponsor">
+        UPDATE `user` SET is_sponsor = #{isSponsor} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM `user` WHERE id = #{id}
+    </delete>
+</mapper>

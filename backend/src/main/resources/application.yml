@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      max-request-size: 10MB
+  datasource:
+    url: jdbc:mysql://localhost:3306/star_weave?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      idle-timeout: 30000
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: Asia/Shanghai
+    default-property-inclusion: non_null
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.starweave.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+# DeepSeek AI 审核配置
+deepseek:
+  api-key: sk-3ad9a4e37c0a49528294c4f242850c5b
+  api-url: https://api.deepseek.com/v1/chat/completions
+  model: deepseek-v4-flash
+
+logging:
+  level:
+    root: WARN
+    com.starweave: INFO
+    org.mybatis: WARN
+  file:
+    name: logs/starweave.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 7

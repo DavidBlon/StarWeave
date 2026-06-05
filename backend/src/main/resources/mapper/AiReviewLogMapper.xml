@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starweave.mapper.AiReviewLogMapper">
+
+    <resultMap id="BaseMap" type="AiReviewLog">
+        <id column="id" property="id"/>
+        <result column="message_id" property="messageId"/>
+        <result column="result" property="result"/>
+        <result column="confidence" property="confidence"/>
+        <result column="reason" property="reason"/>
+        <result column="reviewed_at" property="reviewedAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseMap">
+        SELECT * FROM ai_review_log WHERE id = #{id}
+    </select>
+
+    <select id="findByMessageId" resultMap="BaseMap">
+        SELECT * FROM ai_review_log WHERE message_id = #{messageId}
+    </select>
+
+    <select id="findRecent" resultMap="BaseMap">
+        SELECT * FROM ai_review_log ORDER BY reviewed_at DESC LIMIT #{limit}
+    </select>
+
+    <select id="findByResult" resultMap="BaseMap">
+        SELECT * FROM ai_review_log WHERE result = #{result} ORDER BY reviewed_at DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO ai_review_log (message_id, result, confidence, reason)
+        VALUES (#{messageId}, #{result}, #{confidence}, #{reason})
+    </insert>
+
+    <select id="countByResult" resultType="long">
+        SELECT COUNT(*) FROM ai_review_log WHERE result = #{result}
+    </select>
+</mapper>

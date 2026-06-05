@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starweave.mapper.WishMapper">
+
+    <resultMap id="BaseMap" type="Wish">
+        <id column="id" property="id"/>
+        <result column="meteor_id" property="meteorId"/>
+        <result column="user_id" property="userId"/>
+        <result column="content" property="content"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseMap">
+        SELECT * FROM wish WHERE id = #{id}
+    </select>
+
+    <select id="findByMeteorId" resultMap="BaseMap">
+        SELECT * FROM wish WHERE meteor_id = #{meteorId} ORDER BY created_at DESC
+    </select>
+
+    <resultMap id="WithUserMap" type="Wish">
+        <id column="id" property="id"/>
+        <result column="meteor_id" property="meteorId"/>
+        <result column="user_id" property="userId"/>
+        <result column="content" property="content"/>
+        <result column="replier_nickname" property="replierNickname"/>
+        <result column="created_at" property="createdAt"/>
+    </resultMap>
+
+    <select id="findByMeteorIdWithUser" resultMap="WithUserMap">
+        SELECT w.*, u.nickname AS replier_nickname
+        FROM wish w
+        LEFT JOIN `user` u ON w.user_id = u.id
+        WHERE w.meteor_id = #{meteorId}
+        ORDER BY w.created_at ASC
+    </select>
+
+    <select id="findByMeteorIdsWithUser" resultMap="WithUserMap">
+        SELECT w.*, u.nickname AS replier_nickname
+        FROM wish w
+        LEFT JOIN `user` u ON w.user_id = u.id
+        WHERE w.meteor_id IN
+        <foreach collection="meteorIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+        ORDER BY w.created_at ASC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wish (meteor_id, user_id, content)
+        VALUES (#{meteorId}, #{userId}, #{content})
+    </insert>
+
+    <select id="findByUserIdWithUser" resultMap="WithUserMap">
+        SELECT w.*, u.nickname AS replier_nickname
+        FROM wish w
+        LEFT JOIN `user` u ON w.user_id = u.id
+        WHERE w.user_id = #{userId}
+        ORDER BY w.created_at DESC
+    </select>
+
+    <select id="countByUserId" resultType="long">
+        SELECT COUNT(*) FROM wish WHERE user_id = #{userId}
+    </select>
+
+    <delete id="deleteByMeteorId">
+        DELETE FROM wish WHERE meteor_id = #{meteorId}
+    </delete>
+</mapper>
