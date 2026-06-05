@@ -86,8 +86,12 @@ CREATE TABLE IF NOT EXISTS `wish` (
   `id`         BIGINT        NOT NULL AUTO_INCREMENT COMMENT '许愿ID',
   `meteor_id`  BIGINT        NOT NULL                 COMMENT '流星ID',
   `user_id`    BIGINT        DEFAULT NULL             COMMENT '许愿者用户ID',
-  `content`    VARCHAR(500)  DEFAULT NULL             COMMENT '许愿内容',
-  `created_at` DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '许愿时间',
+  `content`       VARCHAR(500)  DEFAULT NULL             COMMENT '许愿内容',
+  `status`        ENUM('pending','approved','rejected')
+                  NOT NULL DEFAULT 'approved'             COMMENT 'AI审核状态',
+  `review_reason` VARCHAR(255)  DEFAULT NULL             COMMENT '审核拒绝原因',
+  `reviewed_at`   DATETIME      DEFAULT NULL             COMMENT '审核时间',
+  `created_at`    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '许愿时间',
   PRIMARY KEY (`id`),
   INDEX `idx_meteor` (`meteor_id`),
   INDEX `idx_user` (`user_id`),
@@ -149,7 +153,7 @@ CREATE TABLE IF NOT EXISTS `ai_review_log` (
 -- ============================================================
 -- 初始数据：星光守护者样例
 -- ============================================================
-INSERT INTO `sponsor` (`display_name`, `message`, `border_style`, `amount`, `platform`, `is_active`) VALUES
+INSERT IGNORE INTO `sponsor` (`display_name`, `message`, `border_style`, `amount`, `platform`, `is_active`) VALUES
   ('星野',   '愿每一颗流星都找到归处',                                 'sponsor', 66.00, 'afdian', 1),
   ('夜航船', '在黑暗中为你点亮一束光',                                 'sponsor', 33.00, 'afdian', 1),
   ('阿九',   '星星发亮是为了让每一个人有一天都能找到属于自己的星星', 'sponsor', 99.00, 'afdian', 1),
@@ -160,7 +164,7 @@ INSERT INTO `sponsor` (`display_name`, `message`, `border_style`, `amount`, `pla
 -- 管理员账号（密码: admin888）
 -- Java AdminInitializer 启动时也会自动创建，这里手动兜底
 -- ============================================================
-INSERT INTO `user` (`username`, `nickname`, `password_hash`, `bio`, `border_style`, `is_sponsor`, `is_admin`)
+INSERT IGNORE INTO `user` (`username`, `nickname`, `password_hash`, `bio`, `border_style`, `is_sponsor`, `is_admin`)
 VALUES ('admin', '管理员', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918', '✦ 星海管理者', 'admin', 0, 1);
 
 -- ============================================================

@@ -56,4 +56,7 @@ public interface MessageMapper {
 
     /** 按状态统计 */
     long countByStatus(@Param("status") String status);
+
+    /** 删除用户的所有流星 */
+    int deleteByUserId(@Param("userId") Long userId);
 }

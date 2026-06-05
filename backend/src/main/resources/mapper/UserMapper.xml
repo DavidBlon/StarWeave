@@ -13,6 +13,8 @@
         <result column="border_style" property="borderStyle"/>
         <result column="is_sponsor" property="isSponsor"/>
         <result column="is_admin" property="isAdmin"/>
+        <result column="agreed_policy" property="agreedPolicy"/>
+        <result column="agreed_at" property="agreedAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -34,8 +36,8 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO `user` (username, nickname, avatar_url, password_hash, bio, border_style, is_sponsor, is_admin)
-        VALUES (#{username}, #{nickname}, #{avatarUrl}, #{passwordHash}, #{bio}, #{borderStyle}, #{isSponsor}, #{isAdmin})
+        INSERT INTO `user` (username, nickname, avatar_url, password_hash, bio, border_style, is_sponsor, is_admin, agreed_policy, agreed_at)
+        VALUES (#{username}, #{nickname}, #{avatarUrl}, #{passwordHash}, #{bio}, #{borderStyle}, #{isSponsor}, #{isAdmin}, #{agreedPolicy}, #{agreedAt})
     </insert>
 
     <update id="update">
@@ -48,6 +50,8 @@
             <if test="borderStyle != null">border_style = #{borderStyle},</if>
             <if test="isSponsor != null">is_sponsor = #{isSponsor},</if>
             <if test="isAdmin != null">is_admin = #{isAdmin},</if>
+            <if test="agreedPolicy != null">agreed_policy = #{agreedPolicy},</if>
+            <if test="agreedAt != null">agreed_at = #{agreedAt},</if>
         </set>
         WHERE id = #{id}
     </update>

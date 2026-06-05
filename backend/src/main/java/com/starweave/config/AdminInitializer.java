@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.HexFormat;
 
 /**
@@ -30,8 +31,11 @@ public class AdminInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        // 检查是否已有管理员账号（通过 is_admin 标志或固定用户名）
-        User existing = userMapper.findByNickname("admin");
+        // 检查是否已有管理员账号（通过 username 或 nickname）
+        User existing = userMapper.findByUsername("admin");
+        if (existing == null) {
+            existing = userMapper.findByNickname("admin");
+        }
         if (existing != null) {
             if (!Boolean.TRUE.equals(existing.getIsAdmin())) {
                 existing.setIsAdmin(true);
@@ -44,12 +48,15 @@ public class AdminInitializer implements CommandLineRunner {
         }
 
         User admin = new User();
+        admin.setUsername("admin");
         admin.setNickname("admin");
         admin.setPasswordHash(hashPassword("admin888"));
         admin.setBio("✦ 星海管理者");
         admin.setBorderStyle("admin");
         admin.setIsSponsor(false);
         admin.setIsAdmin(true);
+        admin.setAgreedPolicy(true);
+        admin.setAgreedAt(LocalDateTime.now());
         admin.setAvatarUrl(null);
 
         userMapper.insert(admin);

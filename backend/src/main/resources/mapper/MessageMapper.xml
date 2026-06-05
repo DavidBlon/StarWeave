@@ -113,4 +113,8 @@
             <if test="status != null">status = #{status}</if>
         </where>
     </select>
+
+    <delete id="deleteByUserId">
+        DELETE FROM message WHERE user_id = #{userId}
+    </delete>
 </mapper>

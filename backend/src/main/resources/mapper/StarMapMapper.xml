@@ -46,4 +46,8 @@
     <delete id="deleteByMessageId">
         DELETE FROM star_map WHERE message_id = #{messageId}
     </delete>
+
+    <delete id="deleteByUserId">
+        DELETE FROM star_map WHERE user_id = #{userId}
+    </delete>
 </mapper>

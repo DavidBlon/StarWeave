@@ -30,4 +30,8 @@
     <delete id="deleteByMeteorId">
         DELETE FROM catch_history WHERE meteor_id = #{meteorId}
     </delete>
+
+    <delete id="deleteByUserId">
+        DELETE FROM catch_history WHERE user_id = #{userId}
+    </delete>
 </mapper>

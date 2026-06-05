@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { publishMeteor, getUserMeteors } from '../api';
+import Pagination from './Pagination';
 
 const HEALING_EMOJIS = {
   '会好的': '🌱',
@@ -206,28 +207,29 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
             <div style={{ textAlign: 'center', padding: 12, fontSize: 10, color: 'rgba(255,255,255,0.12)' }}>
               加载中...
             </div>
-          ) : myMeteors.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 12, fontSize: 10, color: 'rgba(255,255,255,0.12)' }}>
-              还没有发射过流星
-            </div>
           ) : (
-            myMeteors.map(m => (
-              <div
-                className="my-meteor-item clickable"
-                key={m.id}
-                onClick={() => onViewMeteor && onViewMeteor(m.id)}
-                style={{ cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
-              >
-                <div className="my-meteor-header">
-                  <span className="my-meteor-status" data-status={m.status}>
-                    {m.status === 'approved' ? '✦ 已发射' : m.status === 'rejected' ? '✧ 未通过' : '⋯ 审核中'}
-                  </span>
-                  <span className="my-meteor-time">{fmtTime(m.createdAt)}</span>
+            <Pagination
+              items={myMeteors}
+              emptyIcon="🌌"
+              emptyText="还没有发射过流星"
+              renderItem={(m) => (
+                <div
+                  className="my-meteor-item clickable"
+                  key={m.id}
+                  onClick={() => onViewMeteor && onViewMeteor(m.id)}
+                  style={{ cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
+                >
+                  <div className="my-meteor-header">
+                    <span className="my-meteor-status" data-status={m.status}>
+                      {m.status === 'approved' ? '✦ 已发射' : m.status === 'rejected' ? '✧ 未通过' : '⋯ 审核中'}
+                    </span>
+                    <span className="my-meteor-time">{fmtTime(m.createdAt)}</span>
+                  </div>
+                  <div className="my-meteor-content">{preview(m.content, 120)}</div>
+                  <div className="my-meteor-click-hint">点击查看详情</div>
                 </div>
-                <div className="my-meteor-content">{preview(m.content, 120)}</div>
-                <div className="my-meteor-click-hint">点击查看详情 →</div>
-              </div>
-            ))
+              )}
+            />
           )}
         </div>
       )}

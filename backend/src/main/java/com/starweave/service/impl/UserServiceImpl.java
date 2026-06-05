@@ -2,29 +2,41 @@ package com.starweave.service.impl;
 
 import com.starweave.dto.UserStats;
 import com.starweave.entity.User;
+import com.starweave.mapper.CatchHistoryMapper;
 import com.starweave.mapper.MessageMapper;
+import com.starweave.mapper.StarMapMapper;
 import com.starweave.mapper.UserMapper;
 import com.starweave.mapper.WishMapper;
 import com.starweave.service.UserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
 import java.util.HexFormat;
 import java.util.List;
 
 @Service
 public class UserServiceImpl implements UserService {
 
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+
     private final UserMapper userMapper;
     private final MessageMapper messageMapper;
     private final WishMapper wishMapper;
+    private final StarMapMapper starMapMapper;
+    private final CatchHistoryMapper catchHistoryMapper;
 
-    public UserServiceImpl(UserMapper userMapper, MessageMapper messageMapper, WishMapper wishMapper) {
+    public UserServiceImpl(UserMapper userMapper, MessageMapper messageMapper, WishMapper wishMapper,
+                           StarMapMapper starMapMapper, CatchHistoryMapper catchHistoryMapper) {
         this.userMapper = userMapper;
         this.messageMapper = messageMapper;
         this.wishMapper = wishMapper;
+        this.starMapMapper = starMapMapper;
+        this.catchHistoryMapper = catchHistoryMapper;
     }
 
     @Override
@@ -56,6 +68,8 @@ public class UserServiceImpl implements UserService {
         user.setBorderStyle("default");
         user.setIsSponsor(false);
         user.setIsAdmin(false);
+        user.setAgreedPolicy(true);
+        user.setAgreedAt(LocalDateTime.now());
         user.setPasswordHash(null);
         int avatarSeed = nickname.hashCode() & 0x7fffffff;
         user.setAvatarUrl("/api/avatar/" + (avatarSeed % 100));
@@ -79,6 +93,8 @@ public class UserServiceImpl implements UserService {
         user.setBorderStyle("default");
         user.setIsSponsor(false);
         user.setIsAdmin(false);
+        user.setAgreedPolicy(true);
+        user.setAgreedAt(LocalDateTime.now());
         user.setPasswordHash(hashPassword(password));
         int avatarSeed = username.hashCode() & 0x7fffffff;
         user.setAvatarUrl("/api/avatar/" + (avatarSeed % 100));
@@ -88,6 +104,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User loginWithPassword(String username, String password) {
         User user = userMapper.findByUsername(username);
         if (user == null) {
@@ -99,6 +116,10 @@ public class UserServiceImpl implements UserService {
         if (!user.getPasswordHash().equals(hashPassword(password))) {
             throw new RuntimeException("密码错误");
         }
+        // 登录时更新协议同意状态
+        user.setAgreedPolicy(true);
+        user.setAgreedAt(LocalDateTime.now());
+        userMapper.update(user);
         return user;
     }
 
@@ -178,6 +199,26 @@ public class UserServiceImpl implements UserService {
         long caughtCount = messageMapper.countCaughtByUserId(userId);
         long wishCount = wishMapper.countByUserId(userId);
         return new UserStats(publishedCount, caughtCount, wishCount);
+    }
+
+    @Override
+    @Transactional
+    public boolean deleteUser(Long userId) {
+        User user = userMapper.findById(userId);
+        if (user == null) {
+            throw new RuntimeException("用户不存在");
+        }
+        if (Boolean.TRUE.equals(user.getIsAdmin())) {
+            throw new RuntimeException("不能删除管理员账号");
+        }
+        // 级联删除用户所有数据
+        wishMapper.deleteByUserId(userId);
+        catchHistoryMapper.deleteByUserId(userId);
+        starMapMapper.deleteByUserId(userId);
+        messageMapper.deleteByUserId(userId);
+        userMapper.deleteById(userId);
+        log.info("管理员删除了用户 [{}] ({})", userId, user.getNickname());
+        return true;
     }
 
     private String hashPassword(String password) {

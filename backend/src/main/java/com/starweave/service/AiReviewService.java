@@ -1,6 +1,7 @@
 package com.starweave.service;
 
 import com.starweave.entity.Message;
+import com.starweave.entity.Wish;
 
 /**
  * AI 内容审核服务
@@ -14,6 +15,13 @@ public interface AiReviewService {
      * @return ReviewResult 审核结果
      */
     ReviewResult review(Message message);
+
+    /**
+     * 审核回复内容
+     * @param wish 待审核回复
+     * @return ReviewResult 审核结果
+     */
+    ReviewResult reviewWish(Wish wish);
 
     record ReviewResult(
             boolean approved,

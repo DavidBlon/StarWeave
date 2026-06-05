@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import { loginWithPassword, register } from '../api';
 
-export default function AuthGate({ onLogin }) {
+export default function AuthGate({ onLogin, onShowPolicy }) {
   const [tab, setTab] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [regNick, setRegNick] = useState('');
   const [regUser, setRegUser] = useState('');
   const [regPass, setRegPass] = useState('');
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
     if (!username || !password) { setError('请填写用户名和密码'); return; }
+    if (!agreed) { setError('请先阅读并同意用户协议和隐私政策'); return; }
     setError('');
     setLoading(true);
     try {
@@ -32,6 +34,7 @@ export default function AuthGate({ onLogin }) {
   const handleRegister = async () => {
     const nickname = regNick.trim() || '';
     if (!regUser || !regPass) { setError('请填写用户名和密码'); return; }
+    if (!agreed) { setError('请先阅读并同意用户协议和隐私政策'); return; }
     setError('');
     setLoading(true);
     try {
@@ -59,9 +62,6 @@ export default function AuthGate({ onLogin }) {
         </svg>
       </div>
       <div className="gate-title">流星树洞</div>
-      <div className="gate-desc">
-        每一颗流星，都是一段无人知晓的心事<br />让烦恼划过夜空，在星河里悄然消散
-      </div>
 
       <div className="auth-box">
         <div className="auth-tabs">
@@ -75,15 +75,34 @@ export default function AuthGate({ onLogin }) {
           <div className={`auth-form ${tab === 'login' ? 'active' : ''}`}>
             <input className="auth-input" placeholder="用户名" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="off" />
             <input className="auth-input" type="password" placeholder="密码" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="off" />
-            <button className="auth-btn" onClick={handleLogin} disabled={loading}>{loading ? '进入中...' : '进入星空'}</button>
+            <button className="auth-btn" onClick={handleLogin} disabled={loading || !agreed}>{loading ? '进入中...' : '进入星空'}</button>
           </div>
           <div className={`auth-form ${tab === 'register' ? 'active' : ''}`}>
             <input className="auth-input" placeholder="名字（显示用，可留空）" value={regNick} onChange={e => setRegNick(e.target.value)} autoComplete="off" />
             <input className="auth-input" placeholder="用户名（登录用）" value={regUser} onChange={e => setRegUser(e.target.value)} autoComplete="off" />
             <input className="auth-input" type="password" placeholder="密码" value={regPass} onChange={e => setRegPass(e.target.value)} onKeyDown={e => handleKeyDown(e, handleRegister)} autoComplete="off" />
-            <button className="auth-btn" onClick={handleRegister} disabled={loading}>{loading ? '注册中...' : '加入星空'}</button>
+            <button className="auth-btn" onClick={handleRegister} disabled={loading || !agreed}>{loading ? '注册中...' : '加入星空'}</button>
           </div>
         </div>
+
+        <label className="auth-agree-label">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={e => setAgreed(e.target.checked)}
+            style={{ accentColor: '#c9a7ff', cursor: 'pointer', width: 14, height: 14, flexShrink: 0 }}
+          />
+          <span className="auth-agree-text">我已阅读并同意</span>
+          <span
+            className="auth-agree-link"
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onShowPolicy && onShowPolicy('agreement'); }}
+          >《用户协议》</span>
+          <span className="auth-agree-text">和</span>
+          <span
+            className="auth-agree-link"
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onShowPolicy && onShowPolicy('policy'); }}
+          >《隐私政策》</span>
+        </label>
       </div>
     </div>
   );

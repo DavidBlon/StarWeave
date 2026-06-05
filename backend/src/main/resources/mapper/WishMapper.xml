@@ -8,6 +8,9 @@
         <result column="meteor_id" property="meteorId"/>
         <result column="user_id" property="userId"/>
         <result column="content" property="content"/>
+        <result column="status" property="status"/>
+        <result column="review_reason" property="reviewReason"/>
+        <result column="reviewed_at" property="reviewedAt"/>
         <result column="created_at" property="createdAt"/>
     </resultMap>
 
@@ -24,6 +27,9 @@
         <result column="meteor_id" property="meteorId"/>
         <result column="user_id" property="userId"/>
         <result column="content" property="content"/>
+        <result column="status" property="status"/>
+        <result column="review_reason" property="reviewReason"/>
+        <result column="reviewed_at" property="reviewedAt"/>
         <result column="replier_nickname" property="replierNickname"/>
         <result column="created_at" property="createdAt"/>
     </resultMap>
@@ -48,8 +54,8 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO wish (meteor_id, user_id, content)
-        VALUES (#{meteorId}, #{userId}, #{content})
+        INSERT INTO wish (meteor_id, user_id, content, status)
+        VALUES (#{meteorId}, #{userId}, #{content}, #{status})
     </insert>
 
     <select id="findByUserIdWithUser" resultMap="WithUserMap">
@@ -66,5 +72,46 @@
 
     <delete id="deleteByMeteorId">
         DELETE FROM wish WHERE meteor_id = #{meteorId}
+    </delete>
+
+    <update id="updateStatus">
+        UPDATE wish SET status = #{status}, review_reason = #{reason}, reviewed_at = NOW()
+        WHERE id = #{id}
+    </update>
+
+    <select id="findPendingWishes" resultMap="WithUserMap">
+        SELECT w.*, u.nickname AS replier_nickname
+        FROM wish w
+        LEFT JOIN `user` u ON w.user_id = u.id
+        WHERE w.status = 'pending'
+        ORDER BY w.created_at DESC
+    </select>
+
+    <select id="findAllWishes" resultMap="WithUserMap">
+        SELECT w.*, u.nickname AS replier_nickname
+        FROM wish w
+        LEFT JOIN `user` u ON w.user_id = u.id
+        <where>
+            <if test="status != null">
+                AND w.status = #{status}
+            </if>
+        </where>
+        ORDER BY w.created_at DESC
+    </select>
+
+    <select id="countWishByStatus" resultType="long">
+        SELECT COUNT(*) FROM wish WHERE status = #{status}
+    </select>
+
+    <select id="countWish" resultType="long">
+        SELECT COUNT(*) FROM wish
+    </select>
+
+    <delete id="deleteByUserId">
+        DELETE FROM wish WHERE user_id = #{userId}
+    </delete>
+
+    <delete id="deleteWishById">
+        DELETE FROM wish WHERE id = #{id}
     </delete>
 </mapper>

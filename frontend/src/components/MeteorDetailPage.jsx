@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getMeteor, getWishes, deleteMeteor, makeWish } from '../api';
+import { getMeteor, getWishes, deleteMeteor, deleteWish, makeWish } from '../api';
+import Pagination from './Pagination';
 
 export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, onDeleted }) {
   const [meteor, setMeteor] = useState(null);
   const [wishes, setWishes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [deletingWishId, setDeletingWishId] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [sendingReply, setSendingReply] = useState(false);
 
@@ -45,6 +47,24 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
       setDeleting(false);
     }
   }, [meteorId, user, onBack, onShowToast, onDeleted]);
+
+  const handleDeleteWish = useCallback(async (wishId) => {
+    if (!window.confirm('确定要删除这条回复吗？')) return;
+    setDeletingWishId(wishId);
+    try {
+      const res = await deleteWish(wishId, user.id);
+      if (res.code === 200) {
+        if (onShowToast) onShowToast('回复已删除');
+        loadData();
+      } else {
+        if (onShowToast) onShowToast(res.message || '删除失败');
+      }
+    } catch (_) {
+      if (onShowToast) onShowToast('删除失败');
+    } finally {
+      setDeletingWishId(null);
+    }
+  }, [user, onShowToast, loadData]);
 
   const handleReply = useCallback(async () => {
     const text = replyText.trim();
@@ -104,46 +124,49 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
       <div className="detail-header">
         <button className="detail-back" onClick={onBack}>← 返回</button>
         <span className="detail-title">流星详情</span>
-        <button
-          className="detail-delete"
-          onClick={handleDelete}
-          disabled={deleting}
-        >
-          {deleting ? '删除中...' : '删除'}
-        </button>
+        {meteor && user && meteor.userId === user.id && (
+          <button
+            className="detail-delete"
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? '删除中...' : '删除'}
+          </button>
+        )}
       </div>
 
-      <div className="detail-card">
-        <div className="detail-status" data-status={meteor.status}>
-          {meteor.status === 'approved' ? '✦ 已发射'
-            : meteor.status === 'rejected' ? '✧ 被打回'
-            : '⋯ 审核中'}
-        </div>
-
-        {meteor.reviewReason && (
-          <div className="detail-review-reason" data-status={meteor.status}>
-            <span className="review-reason-label">审核意见：</span>
-            {meteor.reviewReason}
+      <div className="detail-scroll-content">
+        <div className="detail-card">
+          <div className="detail-status" data-status={meteor.status}>
+            {meteor.status === 'approved' ? '✦ 已发射'
+              : meteor.status === 'rejected' ? '✧ 被打回'
+              : '⋯ 审核中'}
           </div>
-        )}
 
-        {meteor.healTag && (
-          <div className="detail-heal-tag">{meteor.healTag}</div>
-        )}
+          {meteor.reviewReason && (
+            <div className="detail-review-reason" data-status={meteor.status}>
+              <span className="review-reason-label">审核意见：</span>
+              {meteor.reviewReason}
+            </div>
+          )}
 
-        <div className="detail-content">{meteor.content}</div>
+          {meteor.healTag && (
+            <div className="detail-heal-tag">{meteor.healTag}</div>
+          )}
 
-        {meteor.healingMessage && (
-          <div className="detail-healing">
-            <div className="healing-label">✦ AI 的回信</div>
-            {meteor.healingMessage}
-          </div>
-        )}
+          <div className="detail-content">{meteor.content}</div>
 
-        <div className="detail-meta">
-          <div className="detail-meta-item">
-            <span className="meta-label">发布时间</span>
-            <span className="meta-value">{fmtTime(meteor.createdAt)}</span>
+          {meteor.healingMessage && (
+            <div className="detail-healing">
+              <div className="healing-label">✦ AI 的回信</div>
+              {meteor.healingMessage}
+            </div>
+          )}
+
+          <div className="detail-meta">
+            <div className="detail-meta-item">
+              <span className="meta-label">发布时间</span>
+              <span className="meta-value">{fmtTime(meteor.createdAt)}</span>
           </div>
           {meteor.caughtAt && (
             <div className="detail-meta-item">
@@ -164,26 +187,43 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
         </div>
       </div>
 
-      {/* 回复列表 */}
-      <div className="detail-section-title">回复 ({wishes.length})</div>
-      <div className="detail-wishes-list">
-        {wishes.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 20, fontSize: 11, color: 'rgba(255,255,255,0.12)' }}>
-            还没有人回复这颗流星
-          </div>
-        ) : (
-          wishes.map(w => (
-            <div className="detail-wish-item" key={w.id}>
-              <div className="detail-wish-author">{w.replierNickname || '匿名旅人'}</div>
-              <div className="detail-wish-time">{fmtTime(w.createdAt)}</div>
-              <div className="detail-wish-text">{w.content}</div>
-            </div>
-          ))
-        )}
+        {/* 回复列表 */}
+        <div className="detail-section-title">回复 ({wishes.length})</div>
+        <div className="detail-wishes-list">
+          <Pagination
+            items={wishes}
+            emptyText="还没有人回复这颗流星"
+            renderItem={(w) => (
+              <div className="detail-wish-item" key={w.id}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="detail-wish-author">{w.replierNickname || '匿名旅人'}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="detail-wish-time">{fmtTime(w.createdAt)}</div>
+                    {w.userId === user.id && (
+                      <button
+                        onClick={() => handleDeleteWish(w.id)}
+                        disabled={deletingWishId === w.id}
+                        style={{
+                          background: 'none', border: 'none', cursor: 'pointer',
+                          color: 'rgba(255,107,107,0.3)', fontSize: 11, padding: '1px 4px',
+                          transition: 'color 0.2s',
+                        }}
+                        onMouseEnter={(e) => e.target.style.color = '#ff6b6b'}
+                        onMouseLeave={(e) => e.target.style.color = 'rgba(255,107,107,0.3)'}
+                        title="删除回复"
+                      >{deletingWishId === w.id ? '...' : '🗑'}</button>
+                    )}
+                  </div>
+                </div>
+                <div className="detail-wish-text">{w.content}</div>
+              </div>
+            )}
+          />
+        </div>
       </div>
 
       {/* 回复输入 */}
-      <div className="detail-reply-area" style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+      <div className="detail-reply-area">
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             type="text"

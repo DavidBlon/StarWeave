@@ -3,8 +3,10 @@ package com.starweave.controller;
 import com.starweave.dto.ApiResponse;
 import com.starweave.entity.Message;
 import com.starweave.entity.User;
+import com.starweave.entity.Wish;
 import com.starweave.service.MessageService;
 import com.starweave.service.UserService;
+import com.starweave.service.WishService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,10 +24,12 @@ public class AdminController {
 
     private final MessageService messageService;
     private final UserService userService;
+    private final WishService wishService;
 
-    public AdminController(MessageService messageService, UserService userService) {
+    public AdminController(MessageService messageService, UserService userService, WishService wishService) {
         this.messageService = messageService;
         this.userService = userService;
+        this.wishService = wishService;
     }
 
     /**
@@ -43,6 +47,8 @@ public class AdminController {
         }
         return null;
     }
+
+    // ========== 流星审核 ==========
 
     /**
      * 获取待审核列表
@@ -87,6 +93,18 @@ public class AdminController {
     }
 
     /**
+     * 删除流星（管理员）
+     */
+    @DeleteMapping("/meteors/{messageId}")
+    public ApiResponse<?> deleteMeteor(@PathVariable Long messageId,
+                                        @RequestParam Long adminId) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return err;
+        messageService.deleteMeteor(messageId, null);
+        return ApiResponse.success("流星已删除", null);
+    }
+
+    /**
      * 获取审核统计
      */
     @GetMapping("/stats")
@@ -102,5 +120,95 @@ public class AdminController {
                 "rejectedCount", stats.getOrDefault("rejected", 0L),
                 "totalCount", stats.getOrDefault("total", 0L)
         ));
+    }
+
+    // ========== 回复审核 ==========
+
+    /**
+     * 获取待审核回复
+     */
+    @GetMapping("/wishes/pending")
+    public ApiResponse<List<Wish>> getPendingWishes(@RequestParam Long adminId) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return (ApiResponse<List<Wish>>) err;
+        return ApiResponse.success(wishService.findPendingWishes());
+    }
+
+    /**
+     * 获取全部回复（可选按状态筛选）
+     */
+    @GetMapping("/wishes")
+    public ApiResponse<List<Wish>> getAllWishes(@RequestParam Long adminId,
+                                                @RequestParam(required = false) String status) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return (ApiResponse<List<Wish>>) err;
+        return ApiResponse.success(wishService.findAllWishes(status));
+    }
+
+    /**
+     * 审核回复
+     */
+    @PostMapping("/wishes/{wishId}/review")
+    public ApiResponse<Wish> reviewWish(@PathVariable Long wishId,
+                                        @RequestParam Long adminId,
+                                        @RequestBody Map<String, String> body) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return (ApiResponse<Wish>) err;
+
+        String status = body.get("status");
+        String reason = body.get("reason");
+
+        if (!List.of("approved", "rejected").contains(status)) {
+            return ApiResponse.badRequest("状态值无效，应为 approved 或 rejected");
+        }
+
+        Wish wish = wishService.reviewWish(wishId, status, reason);
+        return ApiResponse.success(status.equals("approved") ? "已通过" : "已拒绝", wish);
+    }
+
+    /**
+     * 删除回复（管理员）
+     */
+    @DeleteMapping("/wishes/{wishId}")
+    public ApiResponse<?> deleteWish(@PathVariable Long wishId,
+                                      @RequestParam Long adminId) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return err;
+        wishService.deleteWish(wishId);
+        return ApiResponse.success("回复已删除", null);
+    }
+
+    /**
+     * 获取回复统计
+     */
+    @GetMapping("/wishes/stats")
+    public ApiResponse<Map<String, Long>> getWishStats(@RequestParam Long adminId) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return (ApiResponse<Map<String, Long>>) err;
+        return ApiResponse.success(wishService.getWishStats());
+    }
+
+    // ========== 用户管理 ==========
+
+    /**
+     * 获取全部用户
+     */
+    @GetMapping("/users")
+    public ApiResponse<List<User>> getUsers(@RequestParam Long adminId) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return (ApiResponse<List<User>>) err;
+        return ApiResponse.success(userService.findAll());
+    }
+
+    /**
+     * 删除用户及其所有数据
+     */
+    @DeleteMapping("/users/{userId}")
+    public ApiResponse<?> deleteUser(@PathVariable Long userId,
+                                      @RequestParam Long adminId) {
+        ApiResponse<?> err = checkAdmin(adminId);
+        if (err != null) return err;
+        userService.deleteUser(userId);
+        return ApiResponse.success("用户已删除", null);
     }
 }

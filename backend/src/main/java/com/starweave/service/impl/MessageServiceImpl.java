@@ -10,6 +10,7 @@ import com.starweave.mapper.CatchHistoryMapper;
 import com.starweave.service.AiReviewService;
 import com.starweave.service.MessageService;
 import com.starweave.service.StarMapService;
+import com.starweave.service.WishService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class MessageServiceImpl implements MessageService {
     private final StarMapService starMapService;
     private final StarMapMapper starMapMapper;
     private final CatchHistoryMapper catchHistoryMapper;
+    private final WishService wishService;
     private final Random random = new Random();
 
     public MessageServiceImpl(MessageMapper messageMapper,
@@ -38,13 +40,15 @@ public class MessageServiceImpl implements MessageService {
                               AiReviewService aiReviewService,
                               StarMapService starMapService,
                               StarMapMapper starMapMapper,
-                              CatchHistoryMapper catchHistoryMapper) {
+                              CatchHistoryMapper catchHistoryMapper,
+                              WishService wishService) {
         this.messageMapper = messageMapper;
         this.wishMapper = wishMapper;
         this.aiReviewService = aiReviewService;
         this.starMapService = starMapService;
         this.starMapMapper = starMapMapper;
         this.catchHistoryMapper = catchHistoryMapper;
+        this.wishService = wishService;
     }
 
     @Override
@@ -189,29 +193,24 @@ public class MessageServiceImpl implements MessageService {
         if (message == null) {
             throw new RuntimeException("流星不存在");
         }
-        if (!message.getUserId().equals(userId)) {
+        // userId 为 null 表示管理员操作，跳过权限检查
+        if (userId != null && !message.getUserId().equals(userId)) {
             throw new RuntimeException("只能删除自己的流星");
         }
         // 删除关联数据
         wishMapper.deleteByMeteorId(messageId);
-        starMapMapper.deleteByMessageId(messageId);  // 用 messageId 删除星图
+        starMapMapper.deleteByMessageId(messageId);
         catchHistoryMapper.deleteByMeteorId(messageId);
         messageMapper.deleteById(messageId);
-        log.info("用户 {} 删除了流星 [{}]", userId, messageId);
+        log.info("删除流星 [{}] (操作者: {})", messageId, userId != null ? userId : "管理员");
         return true;
     }
 
     @Override
     @Transactional
     public boolean makeWish(Long meteorId, Long userId, String content) {
-        // 插入许愿记录
-        Wish wish = new Wish();
-        wish.setMeteorId(meteorId);
-        wish.setUserId(userId);
-        wish.setContent(content);
-        wishMapper.insert(wish);
-        // 许愿计数 +1
-        messageMapper.incrementWishCount(meteorId);
+        // 委托给 WishService 处理（含 AI 审核）
+        wishService.makeWish(meteorId, userId, content);
         return true;
     }
 }

@@ -35,4 +35,7 @@ public interface UserService {
 
     /** 获取用户统计数据 */
     com.starweave.dto.UserStats getUserStats(Long userId);
+
+    /** 删除用户及其所有关联数据（管理员用） */
+    boolean deleteUser(Long userId);
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getRandomMeteor, catchMeteor as apiCatch, makeWish as apiWish, getWishes, getCaughtMeteors } from '../api';
+import Pagination from './Pagination';
 
 const EMPTY_REPLY = '还没有留言，来做第一个吧';
 
@@ -184,24 +185,24 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
             <div style={{ textAlign: 'center', padding: 12, fontSize: 10, color: 'rgba(255,255,255,0.12)' }}>
               加载中...
             </div>
-          ) : history.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 12, fontSize: 10, color: 'rgba(255,255,255,0.12)' }}>
-              还没有捞取记录
-            </div>
           ) : (
-            history.map(m => (
-              <div
-                className="history-item clickable"
-                key={m.id}
-                onClick={() => onViewMeteor && onViewMeteor(m.id)}
-                style={{ cursor: 'pointer' }}
-              >
-                <span className="tag">✦ 流星</span>
-                <span className="preview">{preview(m.content, 120)}</span>
-                <span className="time">{fmtTime(m.caughtAt || m.createdAt)}</span>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)', marginLeft: 4 }}>→</span>
-              </div>
-            ))
+            <Pagination
+              items={history}
+              emptyIcon="📭"
+              emptyText="还没有捞取记录"
+              renderItem={(m) => (
+                <div
+                  className="history-item clickable"
+                  key={m.id}
+                  onClick={() => onViewMeteor && onViewMeteor(m.id)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="tag">✦ 流星</span>
+                  <span className="preview">{preview(m.content, 120)}</span>
+                  <span className="time">{fmtTime(m.caughtAt || m.createdAt)}</span>
+                </div>
+              )}
+            />
           )}
         </div>
       )}

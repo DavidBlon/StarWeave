@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getUserStats, updateProfile, uploadAvatar, uploadAvatarFile, changePassword, getUserMeteors, getCaughtMeteors, getUserWishes } from '../api';
+import Pagination from './Pagination';
 
 export default function ProfilePage({
   user: initialUser,
@@ -9,6 +10,7 @@ export default function ProfilePage({
   pendingAvatarData,
   onClearPendingAvatar,
   onShowToast,
+  onShowPolicy,
 }) {
   const [user, setUser] = useState(initialUser);
   const [stats, setStats] = useState({ publishedCount: 0, caughtCount: 0, wishCount: 0 });
@@ -382,26 +384,33 @@ export default function ProfilePage({
       </div>
 
       {/* 设置 */}
-      <div className="section-title">设置</div>
       <div className="settings-item">
         <span className="left">用户名</span>
         <span className="right" style={{ opacity: 0.5 }}>{user?.username || '—'}</span>
       </div>
       <div className="settings-item" onClick={startEditNickname} style={{ cursor: 'pointer' }}>
         <span className="left">修改名字</span>
-        <span className="right">{nickname} →</span>
+        <span className="right">{nickname}</span>
       </div>
       <div className="settings-item" onClick={startEditBio} style={{ cursor: 'pointer' }}>
         <span className="left">个人签名</span>
-        <span className="right">{bioText.length > 12 ? bioText.substring(0, 12) + '...' : bioText} →</span>
+        <span className="right">{bioText.length > 12 ? bioText.substring(0, 12) + '...' : bioText}</span>
       </div>
       <div className="settings-item" onClick={() => { setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' }); setPasswordError(''); setShowPasswordModal(true); }} style={{ cursor: 'pointer' }}>
         <span className="left">修改密码</span>
-        <span className="right">→</span>
+        <span className="right" />
       </div>
       <div className="settings-item">
         <span className="left">深空模式</span>
         <span className="right">已开启</span>
+      </div>
+      <div className="settings-item" onClick={() => onShowPolicy && onShowPolicy('agreement')} style={{ cursor: 'pointer' }}>
+        <span className="left">用户协议</span>
+        <span className="right" />
+      </div>
+      <div className="settings-item" onClick={() => onShowPolicy && onShowPolicy('policy')} style={{ cursor: 'pointer' }}>
+        <span className="left">隐私政策</span>
+        <span className="right" />
       </div>
 
       <button className="btn-logout" onClick={onLogout}>退出登录</button>
@@ -463,54 +472,56 @@ export default function ProfilePage({
           <div className="profile-list-body">
             {listLoading ? (
               <div className="profile-list-empty">加载中...</div>
-            ) : listData.length === 0 ? (
-              <div className="profile-list-empty">暂无数据</div>
             ) : (
               <div className="profile-list-scroll">
-                {listData.map((item, idx) => (
-                  <div className="profile-list-item" key={item.id || idx}>
-                    {viewList === 'caught' && (
-                      <>
-                        <div className="pli-preview">{preview(item.content, 80)}</div>
-                        {item.healingMessage && (
-                          <div className="pli-sub">💜 {preview(item.healingMessage, 60)}</div>
-                        )}
-                        <div className="pli-meta">
-                          <span>{item.healerNickname ? `捞取人：${item.healerNickname}` : '漂流中'}</span>
-                          <span>{fmtTime(item.caughtAt || item.createdAt)}</span>
-                        </div>
-                      </>
-                    )}
-                    {viewList === 'published' && (
-                      <>
-                        <div className="pli-header">
-                          <span className="pli-status" data-status={item.status}>
-                            {item.status === 'approved' ? '✦ 已发射'
-                              : item.status === 'rejected' ? '✧ 未通过'
-                              : '⋯ 审核中'}
-                          </span>
-                          <span className="pli-time">{fmtTime(item.createdAt)}</span>
-                        </div>
-                        <div className="pli-preview">{preview(item.content, 120)}</div>
-                        {item.healingMessage && (
-                          <div className="pli-sub">💜 {preview(item.healingMessage, 60)}</div>
-                        )}
-                      </>
-                    )}
-                    {viewList === 'wishes' && (
-                      <>
-                        <div className="pli-header">
-                          <span className="pli-wisher">我</span>
-                          <span className="pli-time">{fmtTime(item.createdAt)}</span>
-                        </div>
-                        <div className="pli-preview">{preview(item.content, 120)}</div>
-                        <div className="pli-sub" style={{ color: 'rgba(139,233,253,0.35)', fontSize: 9 }}>
-                          回应了：{preview(item.meteorContent, 40)}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                ))}
+                <Pagination
+                  items={listData}
+                  emptyText="暂无数据"
+                  renderItem={(item, idx) => (
+                    <div className="profile-list-item" key={item.id || idx}>
+                      {viewList === 'caught' && (
+                        <>
+                          <div className="pli-preview">{preview(item.content, 80)}</div>
+                          {item.healingMessage && (
+                            <div className="pli-sub">💜 {preview(item.healingMessage, 60)}</div>
+                          )}
+                          <div className="pli-meta">
+                            <span>{item.healerNickname ? `捞取人：${item.healerNickname}` : '漂流中'}</span>
+                            <span>{fmtTime(item.caughtAt || item.createdAt)}</span>
+                          </div>
+                        </>
+                      )}
+                      {viewList === 'published' && (
+                        <>
+                          <div className="pli-header">
+                            <span className="pli-status" data-status={item.status}>
+                              {item.status === 'approved' ? '✦ 已发射'
+                                : item.status === 'rejected' ? '✧ 未通过'
+                                : '⋯ 审核中'}
+                            </span>
+                            <span className="pli-time">{fmtTime(item.createdAt)}</span>
+                          </div>
+                          <div className="pli-preview">{preview(item.content, 120)}</div>
+                          {item.healingMessage && (
+                            <div className="pli-sub">💜 {preview(item.healingMessage, 60)}</div>
+                          )}
+                        </>
+                      )}
+                      {viewList === 'wishes' && (
+                        <>
+                          <div className="pli-header">
+                            <span className="pli-wisher">我</span>
+                            <span className="pli-time">{fmtTime(item.createdAt)}</span>
+                          </div>
+                          <div className="pli-preview">{preview(item.content, 120)}</div>
+                          <div className="pli-sub" style={{ color: 'rgba(139,233,253,0.35)', fontSize: 9 }}>
+                            回应了：{preview(item.meteorContent, 40)}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                />
               </div>
             )}
           </div>

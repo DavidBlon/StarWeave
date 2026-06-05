@@ -13,6 +13,8 @@ public class User {
     private String borderStyle;
     private Boolean isSponsor;
     private Boolean isAdmin;
+    private Boolean agreedPolicy;
+    private LocalDateTime agreedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -43,6 +45,12 @@ public class User {
 
     public Boolean getIsAdmin() { return isAdmin; }
     public void setIsAdmin(Boolean isAdmin) { this.isAdmin = isAdmin; }
+
+    public Boolean getAgreedPolicy() { return agreedPolicy; }
+    public void setAgreedPolicy(Boolean agreedPolicy) { this.agreedPolicy = agreedPolicy; }
+
+    public LocalDateTime getAgreedAt() { return agreedAt; }
+    public void setAgreedAt(LocalDateTime agreedAt) { this.agreedAt = agreedAt; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

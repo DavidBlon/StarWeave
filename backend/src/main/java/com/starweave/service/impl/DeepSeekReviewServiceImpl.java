@@ -2,6 +2,7 @@ package com.starweave.service.impl;
 
 import com.starweave.entity.AiReviewLog;
 import com.starweave.entity.Message;
+import com.starweave.entity.Wish;
 import com.starweave.mapper.AiReviewLogMapper;
 import com.starweave.service.AiReviewService;
 import org.slf4j.Logger;
@@ -88,7 +89,8 @@ public class DeepSeekReviewServiceImpl implements AiReviewService {
 
         // 2. 调用 DeepSeek API 进行语义审核
         try {
-            return callDeepSeekReview(message);
+            return callDeepSeekReview(message.getId(), content,
+                    "你是流星树洞的内容审核员。你的任务是判断用户匿名倾诉的内容是否适合公开在树洞中。");
         } catch (Exception e) {
             log.error("DeepSeek API 调用失败，降级为人工审核 (messageId={}): {}", message.getId(), e.getMessage());
             // API 失败时安全降级为 pending，由管理员审核
@@ -96,16 +98,36 @@ public class DeepSeekReviewServiceImpl implements AiReviewService {
         }
     }
 
+    @Override
+    @Transactional
+    public ReviewResult reviewWish(Wish wish) {
+        String content = wish.getContent();
+
+        if (content == null || content.isBlank()) {
+            return reject("内容为空", 1.0);
+        }
+        if (content.length() > 2000) {
+            return reject("内容超出长度限制", 0.95);
+        }
+
+        try {
+            return callDeepSeekReview(wish.getMeteorId(), content,
+                    "你是流星树洞的内容审核员。你的任务是判断用户对流星的回复/许愿内容是否适合展示。回复通常是安慰、鼓励、共情的内容。");
+        } catch (Exception e) {
+            log.error("DeepSeek API 调用失败，降级为人工审核 (wishId={}): {}", wish.getId(), e.getMessage());
+            return pending("AI 审核服务暂时不可用，已转人工", 0.5);
+        }
+    }
+
     /**
      * 调用 DeepSeek API 进行语义审核
      */
-    private ReviewResult callDeepSeekReview(Message message) {
+    private ReviewResult callDeepSeekReview(Long entityId, String content, String roleDesc) {
         // 构建审核 prompt
-        String systemPrompt = """
-                你是流星树洞的内容审核员。你的任务是判断用户匿名倾诉的内容是否适合公开在树洞中。
+        String systemPrompt = roleDesc + """
 
                 【审核原则】
-                - ✅ 允许：情感倾诉、烦恼、心事、碎碎念、生活分享、含有轻微负面情绪的内容
+                - ✅ 允许：情感倾诉、烦恼、心事、碎碎念、生活分享、含有轻微负面情绪的内容、安慰鼓励
                 - ❌ 拒绝：色情内容、约炮/援交、赌博、毒品、暴力、仇恨言论、广告推广、诈骗信息、政治敏感内容、联系方式（微信/QQ/手机号/链接）
                 - ⚠️ 不确定：如果内容介于两者之间，或者你无法明确判断，请标记为 pending
 
@@ -130,7 +152,7 @@ public class DeepSeekReviewServiceImpl implements AiReviewService {
                 "model", model,
                 "messages", List.of(
                         Map.of("role", "system", "content", systemPrompt),
-                        Map.of("role", "user", "content", "请审核以下内容：\n" + message.getContent())
+                        Map.of("role", "user", "content", "请审核以下内容：\n" + content)
                 ),
                 "temperature", 0.1,
                 "max_tokens", 300
@@ -172,7 +194,7 @@ public class DeepSeekReviewServiceImpl implements AiReviewService {
         }
 
         // 根据 decision 和 confidence 做出最终判断
-        return makeFinalDecision(message.getId(), decision, confidence, reason);
+        return makeFinalDecision(entityId, decision, confidence, reason);
     }
 
     /**

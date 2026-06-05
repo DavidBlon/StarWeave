@@ -2,6 +2,7 @@ package com.starweave.service.impl;
 
 import com.starweave.entity.AiReviewLog;
 import com.starweave.entity.Message;
+import com.starweave.entity.Wish;
 import com.starweave.mapper.AiReviewLogMapper;
 import com.starweave.service.AiReviewService;
 import org.slf4j.Logger;
@@ -89,6 +90,33 @@ public class AiReviewServiceImpl implements AiReviewService {
         ReviewResult result = new ReviewResult(true, 0.95, "自动审核通过", healing.tag, healing.message);
         saveLog(message.getId(), result);
         log.debug("消息 {} 审核通过，标签: {}", message.getId(), healing.tag);
+        return result;
+    }
+
+    @Override
+    @Transactional
+    public ReviewResult reviewWish(Wish wish) {
+        String content = wish.getContent();
+
+        if (content == null || content.length() < MIN_CONTENT_LENGTH) {
+            return reject("内容为空", 0.99);
+        }
+        if (content.length() > MAX_CONTENT_LENGTH) {
+            return reject("内容超出长度限制", 0.95);
+        }
+
+        for (Pattern pattern : SENSITIVE_PATTERNS) {
+            if (pattern.matcher(content).find()) {
+                return reject("内容包含不合适的关键词", 0.90);
+            }
+        }
+
+        if (content.replaceAll("(.)\\1{49,}", "$1").length() < content.length() - 50) {
+            return reject("内容包含大量重复字符", 0.85);
+        }
+
+        ReviewResult result = new ReviewResult(true, 0.95, "自动审核通过", null, null);
+        log.debug("回复 {} 审核通过", wish.getId());
         return result;
     }
 

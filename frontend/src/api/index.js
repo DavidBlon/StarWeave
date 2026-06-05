@@ -55,6 +55,9 @@ export const makeWish = (meteorId, userId, content) =>
 export const deleteMeteor = (id, userId) =>
   api.delete(`/meteors/${id}`, { data: { userId } }).then(r => r.data);
 
+export const deleteWish = (wishId, userId) =>
+  api.delete(`/meteors/wishes/${wishId}`, { data: { userId } }).then(r => r.data);
+
 export const getWishes = (meteorId) =>
   api.get(`/meteors/${meteorId}/wishes`).then(r => r.data);
 
@@ -82,5 +85,31 @@ export const getAdminStats = (adminId) =>
 
 export const getAllMessages = (adminId, status) =>
   api.get(`/admin/messages?adminId=${adminId}${status ? `&status=${status}` : ''}`).then(r => r.data);
+
+// ========== 管理员 - 回复审核 ==========
+export const getPendingWishes = (adminId) =>
+  api.get(`/admin/wishes/pending?adminId=${adminId}`).then(r => r.data);
+
+export const getAllWishes = (adminId, status) =>
+  api.get(`/admin/wishes?adminId=${adminId}${status ? `&status=${status}` : ''}`).then(r => r.data);
+
+export const reviewWish = (wishId, adminId, status, reason) =>
+  api.post(`/admin/wishes/${wishId}/review?adminId=${adminId}`, { status, reason }).then(r => r.data);
+
+export const deleteWishAdmin = (wishId, adminId) =>
+  api.delete(`/admin/wishes/${wishId}?adminId=${adminId}`).then(r => r.data);
+
+export const deleteMeteorAdmin = (messageId, adminId) =>
+  api.delete(`/admin/meteors/${messageId}?adminId=${adminId}`).then(r => r.data);
+
+export const getWishStats = (adminId) =>
+  api.get(`/admin/wishes/stats?adminId=${adminId}`).then(r => r.data);
+
+// ========== 管理员 - 用户管理 ==========
+export const getAdminUsers = (adminId) =>
+  api.get(`/admin/users?adminId=${adminId}`).then(r => r.data);
+
+export const deleteUserAdmin = (userId, adminId) =>
+  api.delete(`/admin/users/${userId}?adminId=${adminId}`).then(r => r.data);
 
 export default api;

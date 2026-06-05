@@ -7,6 +7,7 @@ import com.starweave.entity.Wish;
 import com.starweave.mapper.CatchHistoryMapper;
 import com.starweave.mapper.WishMapper;
 import com.starweave.service.MessageService;
+import com.starweave.service.WishService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -19,13 +20,16 @@ public class MeteorController {
     private final MessageService messageService;
     private final WishMapper wishMapper;
     private final CatchHistoryMapper catchHistoryMapper;
+    private final WishService wishService;
 
     public MeteorController(MessageService messageService,
                             WishMapper wishMapper,
-                            CatchHistoryMapper catchHistoryMapper) {
+                            CatchHistoryMapper catchHistoryMapper,
+                            WishService wishService) {
         this.messageService = messageService;
         this.wishMapper = wishMapper;
         this.catchHistoryMapper = catchHistoryMapper;
+        this.wishService = wishService;
     }
 
     /**
@@ -273,5 +277,26 @@ public class MeteorController {
     public ApiResponse<List<CatchHistory>> getCatchHistory(@PathVariable Long userId) {
         List<CatchHistory> history = catchHistoryMapper.findByUserId(userId);
         return ApiResponse.success(history);
+    }
+
+    /**
+     * 删除自己的回复
+     * DELETE /api/meteors/wishes/{wishId}
+     */
+    @DeleteMapping("/wishes/{wishId}")
+    public ApiResponse<Void> deleteWish(@PathVariable Long wishId,
+                                         @RequestBody Map<String, String> body) {
+        Long userId;
+        try {
+            userId = Long.parseLong(body.get("userId"));
+        } catch (NumberFormatException e) {
+            return ApiResponse.badRequest("无效的用户ID");
+        }
+        try {
+            wishService.deleteWishByOwner(wishId, userId);
+            return ApiResponse.success("回复已删除", null);
+        } catch (RuntimeException e) {
+            return ApiResponse.badRequest(e.getMessage());
+        }
     }
 }

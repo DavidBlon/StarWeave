@@ -18,4 +18,6 @@ public interface CatchHistoryMapper {
     int insert(CatchHistory catchHistory);
 
     int deleteByMeteorId(@Param("meteorId") Long meteorId);
+
+    int deleteByUserId(@Param("userId") Long userId);
 }

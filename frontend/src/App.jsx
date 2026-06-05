@@ -6,10 +6,13 @@ import CatchPage from './components/CatchPage';
 import ProfilePage from './components/ProfilePage';
 import MeteorDetailPage from './components/MeteorDetailPage';
 import AdminPage from './components/AdminPage';
+import StarMapPage from './components/StarMapPage';
 import AvatarPicker from './components/AvatarPicker';
 import LoginEffect from './components/LoginEffect';
 import LogoutEffect from './components/LogoutEffect';
 import Toast from './components/Toast';
+import LegalPage from './components/LegalPage';
+import MusicPlayer from './components/MusicPlayer';
 import { getUser } from './api';
 
 export default function App() {
@@ -24,6 +27,7 @@ export default function App() {
   const [pendingAvatarData, setPendingAvatarData] = useState(null);
   const [viewingMeteorId, setViewingMeteorId] = useState(null);
   const [starPaused, setStarPaused] = useState(false);
+  const [showLegalType, setShowLegalType] = useState(null);
 
   const loginEffectPendingRef = useRef(false);
   const logoutEffectPendingRef = useRef(false);
@@ -92,6 +96,11 @@ export default function App() {
     setPendingAvatarData(null);
   }, []);
 
+  // 协议/政策页面
+  const handleShowPolicy = useCallback((type) => {
+    setShowLegalType(type);
+  }, []);
+
   // 查看流星详情
   const handleViewMeteor = useCallback((meteorId) => {
     setViewingMeteorId(meteorId);
@@ -153,6 +162,8 @@ export default function App() {
         return <LaunchPage user={user} onShowToast={showToast} onHideToast={hideToast} onViewMeteor={handleViewMeteor} />;
       case 'catch':
         return <CatchPage user={user} onShowToast={showToast} onViewMeteor={handleViewMeteor} />;
+      case 'starmap':
+        return <StarMapPage onShowToast={showToast} />;
       case 'profile':
         return (
           <ProfilePage
@@ -163,6 +174,7 @@ export default function App() {
             pendingAvatarData={pendingAvatarData}
             onClearPendingAvatar={clearPendingAvatar}
             onShowToast={showToast}
+            onShowPolicy={handleShowPolicy}
           />
         );
       case 'admin':
@@ -176,6 +188,7 @@ export default function App() {
     <>
       <StarField paused={starPaused} />
       <Toast message={toastMsg} visible={toastVisible} onHide={hideToast} />
+      <MusicPlayer />
 
       <div className="app-container">
         {/* Top Bar */}
@@ -188,7 +201,7 @@ export default function App() {
           {/* Auth Gate */}
           {!loggedIn && (
             <div id="authGate" style={{ height: '100%' }}>
-              <AuthGate onLogin={handleLogin} />
+              <AuthGate onLogin={handleLogin} onShowPolicy={handleShowPolicy} />
             </div>
           )}
 
@@ -213,6 +226,14 @@ export default function App() {
               </svg>
             </span>
             <span className="tab-label">捞流星</span>
+          </button>
+          <button className={`tab-item ${activeTab === 'starmap' ? 'active' : ''}`} data-tab="starmap" onClick={() => switchTab('starmap')}>
+            <span className="tab-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </span>
+            <span className="tab-label">星图</span>
           </button>
           <button className={`tab-item ${activeTab === 'profile' ? 'active' : ''}`} data-tab="profile" onClick={() => switchTab('profile')}>
             <span className="tab-icon">
@@ -239,6 +260,14 @@ export default function App() {
 
       {/* Effect overlays */}
       {renderEffectOverlays()}
+
+      {/* 用户协议 / 隐私政策 */}
+      {showLegalType && (
+        <LegalPage
+          defaultTab={showLegalType}
+          onClose={() => setShowLegalType(null)}
+        />
+      )}
 
       {/* Avatar Picker Modal */}
       <AvatarPicker

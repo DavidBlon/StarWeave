@@ -24,4 +24,6 @@ public interface StarMapMapper {
     int deleteById(@Param("id") Long id);
 
     int deleteByMessageId(@Param("messageId") Long messageId);
+
+    int deleteByUserId(@Param("userId") Long userId);
 }
