@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getMeteor, getWishes, deleteMeteor, deleteWish, makeWish } from '../api';
 import { fmtTime } from '../utils';
 import Pagination from './Pagination';
@@ -15,6 +15,7 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
   const [sendingReply, setSendingReply] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState(null);
   const [leaving, setLeaving] = useState(false);
+  const composingRef = useRef(false);
 
   const handleBack = useCallback(() => {
     setLeaving(true);
@@ -255,7 +256,9 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
             aria-label="写下你想对 TA 说的话"
             maxLength={100}
             value={replyText}
-            onChange={e => setReplyText(e.target.value)}
+            onChange={e => { if (!composingRef.current) setReplyText(e.target.value); }}
+            onCompositionStart={() => { composingRef.current = true; }}
+            onCompositionEnd={e => { composingRef.current = false; setReplyText(e.target.value); }}
             onKeyDown={e => e.key === 'Enter' && !sendingReply && handleReply()}
             disabled={sendingReply}
           />

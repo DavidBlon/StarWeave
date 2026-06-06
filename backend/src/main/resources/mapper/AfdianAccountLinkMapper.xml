@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.starweave.mapper.AfdianAccountLinkMapper">
+
+    <resultMap id="BaseMap" type="AfdianAccountLink">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="afdian_user_id" property="afdianUserId"/>
+        <result column="afdian_user_private_id" property="afdianUserPrivateId"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findByUserId" resultMap="BaseMap">
+        SELECT * FROM afdian_account_link WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByAfdianUserId" resultMap="BaseMap">
+        SELECT * FROM afdian_account_link WHERE afdian_user_id = #{afdianUserId}
+    </select>
+
+    <select id="findByAfdianUserPrivateId" resultMap="BaseMap">
+        SELECT * FROM afdian_account_link WHERE afdian_user_private_id = #{afdianUserPrivateId}
+    </select>
+
+    <insert id="upsert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO afdian_account_link (user_id, afdian_user_id, afdian_user_private_id)
+        VALUES (#{userId}, #{afdianUserId}, #{afdianUserPrivateId})
+        ON DUPLICATE KEY UPDATE
+            user_id = VALUES(user_id),
+            afdian_user_id = VALUES(afdian_user_id),
+            afdian_user_private_id = VALUES(afdian_user_private_id)
+    </insert>
+</mapper>

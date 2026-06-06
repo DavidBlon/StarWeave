@@ -14,34 +14,14 @@ import java.util.Map;
 @RequestMapping("/api/user")
 public class UserController {
 
+    private static final String USERNAME_PATTERN = "^[A-Za-z0-9]+$";
+
     private final UserService userService;
     private final CaptchaService captchaService;
 
     public UserController(UserService userService, CaptchaService captchaService) {
         this.userService = userService;
         this.captchaService = captchaService;
-    }
-
-    /**
-     * 匿名注册 / 登录（按昵称查找，不存在则创建）
-     */
-    @PostMapping("/login")
-    public ApiResponse<User> login(@RequestBody Map<String, String> body) {
-        String nickname = body.get("nickname");
-        if (nickname == null || nickname.isBlank()) {
-            return ApiResponse.badRequest("昵称不能为空");
-        }
-        nickname = nickname.strip();
-        if (nickname.length() > 20) {
-            return ApiResponse.badRequest("昵称最长 20 个字符");
-        }
-
-        User user = userService.findByUsername(nickname);
-        if (user == null) {
-            user = userService.register(nickname);
-            return ApiResponse.success("欢迎来到星海", user);
-        }
-        return ApiResponse.success("欢迎回来", user);
     }
 
     /**
@@ -58,6 +38,9 @@ public class UserController {
         if (username == null || username.isBlank()) {
             return ApiResponse.badRequest("用户名不能为空");
         }
+        if (nickname == null || nickname.isBlank()) {
+            return ApiResponse.badRequest("名字不能为空");
+        }
         if (password == null || password.length() < 6) {
             return ApiResponse.badRequest("密码至少 6 位");
         }
@@ -67,6 +50,14 @@ public class UserController {
         username = username.strip();
         if (username.length() > 20) {
             return ApiResponse.badRequest("用户名最长 20 个字符");
+        }
+        nickname = nickname.strip();
+        if (nickname.length() > 20) {
+            return ApiResponse.badRequest("名字最长 20 个字符");
+        }
+
+        if (!isValidUsername(username)) {
+            return ApiResponse.badRequest("用户名只能由英文和数字组成");
         }
 
         try {
@@ -255,5 +246,9 @@ public class UserController {
     @GetMapping("/list")
     public ApiResponse<List<User>> list() {
         return ApiResponse.success(userService.findAll());
+    }
+
+    private boolean isValidUsername(String username) {
+        return username.matches(USERNAME_PATTERN);
     }
 }

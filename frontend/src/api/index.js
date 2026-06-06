@@ -10,9 +10,6 @@ export const getCaptcha = () =>
   api.get('/captcha').then(r => r.data);
 
 // ========== 用户 ==========
-export const loginAnonymous = (nickname) =>
-  api.post('/user/login', { nickname }).then(r => r.data);
-
 export const register = (username, nickname, password, captchaId, captcha) =>
   api.post('/user/register', { username, nickname, password, captchaId, captcha }).then(r => r.data);
 

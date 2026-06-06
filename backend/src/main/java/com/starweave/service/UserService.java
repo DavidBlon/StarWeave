@@ -14,8 +14,6 @@ public interface UserService {
 
     List<User> findAll();
 
-    User register(String nickname);
-
     /** 使用密码注册 */
     User registerWithPassword(String username, String nickname, String password);
 

@@ -50,6 +50,10 @@ export default function ProfilePage({
 
   const nicknameRef = useRef(null);
   const bioRef = useRef(null);
+  // iOS Safari 受控输入框兼容：跟踪组合输入状态，避免重复输入
+  const composingRef = useRef(false);
+  const onCompStart = () => { composingRef.current = true; };
+  const onCompEnd = (e, setter) => { composingRef.current = false; setter(e.target.value); };
 
   // 解析 emoji:char:bg:border 格式
   const parseEmojiAvatar = useCallback((url) => {
@@ -346,7 +350,9 @@ export default function ProfilePage({
               style={{ width: 160, textAlign: 'center', margin: 0 }}
               value={nicknameDraft}
               maxLength={20}
-              onChange={e => setNicknameDraft(e.target.value)}
+              onChange={e => { if (!composingRef.current) setNicknameDraft(e.target.value); }}
+              onCompositionStart={onCompStart}
+              onCompositionEnd={e => onCompEnd(e, setNicknameDraft)}
               onKeyDown={e => { if (e.key === 'Enter') saveNickname(); if (e.key === 'Escape') cancelEditNickname(); }}
               onBlur={saveNickname}
               disabled={saving}
@@ -367,7 +373,9 @@ export default function ProfilePage({
               style={{ width: 200, textAlign: 'center', fontSize: 11, margin: 0 }}
               value={bioDraft}
               maxLength={200}
-              onChange={e => setBioDraft(e.target.value)}
+              onChange={e => { if (!composingRef.current) setBioDraft(e.target.value); }}
+              onCompositionStart={onCompStart}
+              onCompositionEnd={e => onCompEnd(e, setBioDraft)}
               onKeyDown={e => { if (e.key === 'Enter') saveBio(); if (e.key === 'Escape') cancelEditBio(); }}
               onBlur={saveBio}
               disabled={saving}
@@ -436,7 +444,9 @@ export default function ProfilePage({
               placeholder="旧密码"
               aria-label="旧密码"
               value={passwordForm.oldPassword}
-              onChange={e => setPasswordForm(f => ({ ...f, oldPassword: e.target.value }))}
+              onChange={e => { if (!composingRef.current) setPasswordForm(f => ({ ...f, oldPassword: e.target.value })); }}
+              onCompositionStart={onCompStart}
+              onCompositionEnd={e => { composingRef.current = false; setPasswordForm(f => ({ ...f, oldPassword: e.target.value })); }}
               autoComplete="current-password"
             />
             <input
@@ -445,7 +455,9 @@ export default function ProfilePage({
               placeholder="新密码（至少 6 位）"
               aria-label="新密码"
               value={passwordForm.newPassword}
-              onChange={e => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
+              onChange={e => { if (!composingRef.current) setPasswordForm(f => ({ ...f, newPassword: e.target.value })); }}
+              onCompositionStart={onCompStart}
+              onCompositionEnd={e => { composingRef.current = false; setPasswordForm(f => ({ ...f, newPassword: e.target.value })); }}
               autoComplete="new-password"
             />
             <input
@@ -454,7 +466,9 @@ export default function ProfilePage({
               placeholder="确认新密码"
               aria-label="确认新密码"
               value={passwordForm.confirmPassword}
-              onChange={e => setPasswordForm(f => ({ ...f, confirmPassword: e.target.value }))}
+              onChange={e => { if (!composingRef.current) setPasswordForm(f => ({ ...f, confirmPassword: e.target.value })); }}
+              onCompositionStart={onCompStart}
+              onCompositionEnd={e => { composingRef.current = false; setPasswordForm(f => ({ ...f, confirmPassword: e.target.value })); }}
               autoComplete="new-password"
             />
             {passwordError && (

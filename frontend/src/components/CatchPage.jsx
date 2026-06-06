@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getRandomMeteor, catchMeteor as apiCatch, makeWish as apiWish, getWishes, getCaughtMeteors } from '../api';
 import { fmtTime, preview } from '../utils';
 import Pagination from './Pagination';
@@ -16,6 +16,7 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(true);
   const [showHistory, setShowHistory] = useState(false);
+  const composingRef = useRef(false);
 
   // 加载捞取记录
   useEffect(() => {
@@ -173,7 +174,9 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
               placeholder="写下你想对 TA 说的话"
               maxLength={100}
               value={replyText}
-              onChange={e => setReplyText(e.target.value)}
+              onChange={e => { if (!composingRef.current) setReplyText(e.target.value); }}
+              onCompositionStart={() => { composingRef.current = true; }}
+              onCompositionEnd={e => { composingRef.current = false; setReplyText(e.target.value); }}
               onKeyDown={e => e.key === 'Enter' && sendReply()}
             />
             <button className="btn-reply" onClick={sendReply}>送出去</button>

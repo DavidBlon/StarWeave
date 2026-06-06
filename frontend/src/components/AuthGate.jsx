@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { loginWithPassword, register, getCaptcha } from '../api';
 
 export default function AuthGate({ onLogin, onShowPolicy }) {
@@ -11,6 +11,15 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // iOS Safari 受控输入框兼容：跟踪组合输入状态，避免重复输入
+  const composingRef = useRef(false);
+  const onCompositionStart = () => { composingRef.current = true; };
+  const onCompositionEnd = (e, setter, sanitizer) => {
+    composingRef.current = false;
+    // 组合结束时手动触发一次值更新（因为组合期间 onChange 被跳过了）
+    setter(sanitizer ? sanitizer(e.target.value) : e.target.value);
+  };
 
   // 验证码状态
   const [captchaId, setCaptchaId] = useState('');
@@ -62,8 +71,11 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
   };
 
   const handleRegister = async () => {
-    const nickname = regNick.trim() || '';
+    const nickname = regNick.trim();
     if (!regUser || !regPass) { setError('请填写用户名和密码'); return; }
+    if (!/^[a-zA-Z0-9]{1,20}$/.test(regUser)) { setError('用户名只能由英文字母和数字组成，最多20位'); return; }
+    if (regPass.length < 6) { setError('密码至少需要6位'); return; }
+    if (!nickname) { setError('请填写昵称'); return; }
     if (!captchaInput) { setError('请填写验证码'); return; }
     if (!agreed) { setError('请先阅读并同意用户协议和隐私政策'); return; }
     setError('');
@@ -107,10 +119,10 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
 
         <div className="auth-forms">
           <div className={`auth-form ${tab === 'login' ? 'active' : ''}`}>
-            <input className="auth-input" placeholder="用户名" aria-label="用户名" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="username" />
-            <input className="auth-input" type="password" placeholder="密码" aria-label="密码" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="current-password" />
+            <input className="auth-input" placeholder="用户名" aria-label="用户名" value={username} onChange={e => { if (!composingRef.current) setUsername(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)); }} onCompositionStart={onCompositionStart} onCompositionEnd={e => onCompositionEnd(e, setUsername, v => v.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20))} onKeyDown={e => handleKeyDown(e, handleLogin)} maxLength={20} autoComplete="off" />
+            <input className="auth-input" type="password" placeholder="密码" aria-label="密码" value={password} onChange={e => { if (!composingRef.current) setPassword(e.target.value); }} onCompositionStart={onCompositionStart} onCompositionEnd={e => onCompositionEnd(e, setPassword)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="current-password" />
             <div className="captcha-row">
-              <input className="auth-input captcha-input" placeholder="验证码" aria-label="验证码" value={captchaInput} onChange={e => setCaptchaInput(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} maxLength={6} />
+              <input className="auth-input captcha-input" placeholder="验证码" aria-label="验证码" value={captchaInput} onChange={e => { if (!composingRef.current) setCaptchaInput(e.target.value); }} onCompositionStart={onCompositionStart} onCompositionEnd={e => onCompositionEnd(e, setCaptchaInput)} onKeyDown={e => handleKeyDown(e, handleLogin)} maxLength={6} />
               {captchaImage && (
                 <img className="captcha-img" src={captchaImage} alt="验证码" onClick={fetchCaptcha} title="点击刷新验证码" />
               )}
@@ -118,11 +130,11 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
             <button className="auth-btn" onClick={handleLogin} disabled={loading || !agreed}>{loading ? '进入中...' : '进入星空'}</button>
           </div>
           <div className={`auth-form ${tab === 'register' ? 'active' : ''}`}>
-            <input className="auth-input" placeholder="名字（显示用，可留空）" aria-label="昵称（可选）" value={regNick} onChange={e => setRegNick(e.target.value)} autoComplete="name" />
-            <input className="auth-input" placeholder="用户名（登录用）" aria-label="用户名" value={regUser} onChange={e => setRegUser(e.target.value)} autoComplete="username" />
-            <input className="auth-input" type="password" placeholder="密码" aria-label="密码" value={regPass} onChange={e => setRegPass(e.target.value)} onKeyDown={e => handleKeyDown(e, handleRegister)} autoComplete="new-password" />
+            <input className="auth-input" placeholder="昵称（显示名称，支持中文）" aria-label="昵称" value={regNick} onChange={e => { if (!composingRef.current) setRegNick(e.target.value.slice(0, 20)); }} onCompositionStart={onCompositionStart} onCompositionEnd={e => onCompositionEnd(e, setRegNick, v => v.slice(0, 20))} maxLength={20} autoComplete="off" />
+            <input className="auth-input" placeholder="用户名（仅限英文和数字）" aria-label="用户名" value={regUser} onChange={e => { if (!composingRef.current) setRegUser(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20)); }} onCompositionStart={onCompositionStart} onCompositionEnd={e => onCompositionEnd(e, setRegUser, v => v.replace(/[^a-zA-Z0-9]/g, '').slice(0, 20))} maxLength={20} autoComplete="off" />
+            <input className="auth-input" type="password" placeholder="密码（至少6位）" aria-label="密码" value={regPass} onChange={e => { if (!composingRef.current) setRegPass(e.target.value); }} onCompositionStart={onCompositionStart} onCompositionEnd={e => onCompositionEnd(e, setRegPass)} onKeyDown={e => handleKeyDown(e, handleRegister)} autoComplete="new-password" />
             <div className="captcha-row">
-              <input className="auth-input captcha-input" placeholder="验证码" aria-label="验证码" value={captchaInput} onChange={e => setCaptchaInput(e.target.value)} onKeyDown={e => handleKeyDown(e, handleRegister)} maxLength={6} />
+              <input className="auth-input captcha-input" placeholder="验证码" aria-label="验证码" value={captchaInput} onChange={e => { if (!composingRef.current) setCaptchaInput(e.target.value); }} onCompositionStart={onCompositionStart} onCompositionEnd={e => onCompositionEnd(e, setCaptchaInput)} onKeyDown={e => handleKeyDown(e, handleRegister)} maxLength={6} />
               {captchaImage && (
                 <img className="captcha-img" src={captchaImage} alt="验证码" onClick={fetchCaptcha} title="点击刷新验证码" />
               )}

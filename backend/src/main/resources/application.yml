@@ -8,7 +8,7 @@ spring:
       max-file-size: 5MB
       max-request-size: 10MB
   datasource:
-    url: jdbc:mysql://localhost:3306/star_weave?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false
+    url: jdbc:mysql://localhost:3306/star_weave?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
     username: root
     password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -33,6 +33,12 @@ deepseek:
   api-key: sk-3ad9a4e37c0a49528294c4f242850c5b
   api-url: https://api.deepseek.com/v1/chat/completions
   model: deepseek-v4-flash
+
+afdian:
+  oauth:
+    client-id: ${AFDIAN_CLIENT_ID:}
+    client-secret: ${AFDIAN_CLIENT_SECRET:}
+    redirect-uri: ${AFDIAN_REDIRECT_URI:}
 
 logging:
   level:

@@ -10,6 +10,7 @@ import com.starweave.mapper.WishMapper;
 import com.starweave.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +24,7 @@ import java.util.List;
 public class UserServiceImpl implements UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
+    private static final String USERNAME_PATTERN = "^[A-Za-z0-9]+$";
 
     private final UserMapper userMapper;
     private final MessageMapper messageMapper;
@@ -61,26 +63,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public User register(String nickname) {
-        User user = new User();
-        user.setUsername(nickname);
-        user.setNickname(nickname);
-        user.setBorderStyle("default");
-        user.setIsSponsor(false);
-        user.setIsAdmin(false);
-        user.setAgreedPolicy(true);
-        user.setAgreedAt(LocalDateTime.now());
-        user.setPasswordHash(null);
-        int avatarSeed = nickname.hashCode() & 0x7fffffff;
-        user.setAvatarUrl("/api/avatar/" + (avatarSeed % 100));
-
-        userMapper.insert(user);
-        return user;
-    }
-
-    @Override
-    @Transactional
     public User registerWithPassword(String username, String nickname, String password) {
+        validateUsername(username);
+        validateNickname(nickname);
+
         // 检查用户名是否已存在
         User existing = userMapper.findByUsername(username);
         if (existing != null) {
@@ -89,7 +75,7 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setUsername(username);
-        user.setNickname(nickname != null && !nickname.isBlank() ? nickname.strip() : username);
+        user.setNickname(nickname.strip());
         user.setBorderStyle("default");
         user.setIsSponsor(false);
         user.setIsAdmin(false);
@@ -99,7 +85,11 @@ public class UserServiceImpl implements UserService {
         int avatarSeed = username.hashCode() & 0x7fffffff;
         user.setAvatarUrl("/api/avatar/" + (avatarSeed % 100));
 
-        userMapper.insert(user);
+        try {
+            userMapper.insert(user);
+        } catch (DuplicateKeyException e) {
+            throw new RuntimeException("该用户名已被使用");
+        }
         return user;
     }
 
@@ -230,4 +220,20 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Password hashing failed", e);
         }
     }
+
+    private void validateUsername(String username) {
+        if (username == null || !username.matches(USERNAME_PATTERN)) {
+            throw new RuntimeException("用户名只能由英文和数字组成");
+        }
+    }
+
+    private void validateNickname(String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new RuntimeException("名字不能为空");
+        }
+        if (nickname.strip().length() > 20) {
+            throw new RuntimeException("名字最长 20 个字符");
+        }
+    }
+
 }
