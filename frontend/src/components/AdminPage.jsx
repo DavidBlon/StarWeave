@@ -4,7 +4,10 @@ import {
   getPendingWishes, getAllWishes, reviewWish, deleteWishAdmin,
   deleteMeteorAdmin, getWishStats, getAdminUsers, deleteUserAdmin,
 } from '../api';
+import { fmtTime } from '../utils';
 import Pagination from './Pagination';
+import ConfirmModal from './ConfirmModal';
+import Skeleton from './Skeleton';
 
 const TABS = [
   { key: 'pending', label: '待审核流星', icon: '⋯' },
@@ -80,9 +83,19 @@ export default function AdminPage({ user, onShowToast }) {
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadPending(), loadPendingWishes(), loadAll(), loadAllWishes(), loadUsers()])
-      .finally(() => setLoading(false));
-  }, [loadPending, loadPendingWishes, loadAll, loadAllWishes, loadUsers]);
+    const loadFn = {
+      pending: loadPending,
+      pendingWishes: loadPendingWishes,
+      all: loadAll,
+      allWishes: loadAllWishes,
+      users: loadUsers,
+    }[tab];
+    if (loadFn) {
+      loadFn().finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, [tab, loadPending, loadPendingWishes, loadAll, loadAllWishes, loadUsers]);
 
   // ===== 操作 =====
   const handleReview = async (messageId, status) => {
@@ -146,15 +159,9 @@ export default function AdminPage({ user, onShowToast }) {
   };
 
   // ===== 工具函数 =====
-  const fmtTime = (t) => {
-    if (!t) return '';
-    const d = new Date(t);
-    return `${(d.getMonth()+1).toString().padStart(2,'0')}-${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
-  };
-
   const statusLabel = (s) => {
     switch (s) {
-      case 'approved': return { text: '✦ 已通过', color: 'rgba(139,233,253,0.7)' };
+      case 'approved': return { text: '✦ 已通过', color: 'rgba(103,232,249,0.7)' };
       case 'rejected': return { text: '✧ 已拒绝', color: 'rgba(255,107,107,0.6)' };
       default: return { text: '⋯ 待审核', color: 'rgba(255,217,61,0.6)' };
     }
@@ -197,6 +204,7 @@ export default function AdminPage({ user, onShowToast }) {
         onMouseLeave={(e) => e.target.style.color = 'rgba(255,107,107,0.4)'}
         onClick={() => setConfirmDelete(key)}
         title="删除"
+        aria-label="删除"
       >🗑</button>
     );
   };
@@ -204,13 +212,13 @@ export default function AdminPage({ user, onShowToast }) {
   // ===== 渲染流星卡片 =====
   const renderMeteorCard = (msg, showActions = true) => (
     <div className="admin-item" key={`m-${msg.id}`} style={{
-      borderLeftColor: msg.status === 'approved' ? 'rgba(139,233,253,0.2)'
+      borderLeftColor: msg.status === 'approved' ? 'rgba(103,232,249,0.2)'
         : msg.status === 'rejected' ? 'rgba(255,107,107,0.15)' : 'rgba(255,184,108,0.15)',
     }}>
       <div className="admin-item-header">
         <span className="admin-item-user">用户 #{msg.userId}</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {msg._type && <span style={{ fontSize: 9, color: 'rgba(201,167,255,0.5)', background: 'rgba(201,167,255,0.08)', padding: '1px 5px', borderRadius: 4 }}>{msg._type}</span>}
+          {msg._type && <span style={{ fontSize: 9, color: 'rgba(180,160,250,0.5)', background: 'rgba(180,160,250,0.08)', padding: '1px 5px', borderRadius: 4 }}>{msg._type}</span>}
           <StatusBadge status={msg.status} />
           <span className="admin-item-time">{fmtTime(msg.createdAt)}</span>
           {showActions && <DeleteBtn id={msg.id} type="meteor" disabled={operatingId === msg.id} onConfirm={() => handleDeleteMeteor(msg.id)} />}
@@ -220,8 +228,8 @@ export default function AdminPage({ user, onShowToast }) {
       {msg.reviewReason && (
         <div className="admin-item-reason"><span className="reason-label">AI 判断：</span>{msg.reviewReason}</div>
       )}
-      {msg.healTag && <div style={{ fontSize: 10, color: 'rgba(201,167,255,0.6)', marginBottom: 4, padding: '0 8px' }}>💫 {msg.healTag}</div>}
-      {msg.healingMessage && <div style={{ fontSize: 10, color: 'rgba(139,233,253,0.5)', marginBottom: 4, padding: '0 8px', lineHeight: 1.5 }}>✨ {msg.healingMessage}</div>}
+      {msg.healTag && <div style={{ fontSize: 10, color: 'rgba(180,160,250,0.6)', marginBottom: 4, padding: '0 8px' }}>💫 {msg.healTag}</div>}
+      {msg.healingMessage && <div style={{ fontSize: 10, color: 'rgba(103,232,249,0.5)', marginBottom: 4, padding: '0 8px', lineHeight: 1.5 }}>✨ {msg.healingMessage}</div>}
       {showActions && msg.status === 'pending' && (
         <div className="admin-item-actions">
           <button className="admin-btn admin-btn-approve" onClick={() => handleReview(msg.id, 'approved')} disabled={operatingId === msg.id}>
@@ -238,7 +246,7 @@ export default function AdminPage({ user, onShowToast }) {
   // ===== 渲染回复卡片 =====
   const renderWishCard = (wish, showActions = true) => (
     <div className="admin-item" key={`w-${wish.id}`} style={{
-      borderLeftColor: wish.status === 'approved' ? 'rgba(139,233,253,0.2)'
+      borderLeftColor: wish.status === 'approved' ? 'rgba(103,232,249,0.2)'
         : wish.status === 'rejected' ? 'rgba(255,107,107,0.15)' : 'rgba(255,184,108,0.15)',
     }}>
       <div className="admin-item-header">
@@ -247,7 +255,7 @@ export default function AdminPage({ user, onShowToast }) {
           <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.2)', marginLeft: 4 }}>回复流星 #{wish.meteorId}</span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {wish._type && <span style={{ fontSize: 9, color: 'rgba(201,167,255,0.5)', background: 'rgba(201,167,255,0.08)', padding: '1px 5px', borderRadius: 4 }}>{wish._type}</span>}
+          {wish._type && <span style={{ fontSize: 9, color: 'rgba(180,160,250,0.5)', background: 'rgba(180,160,250,0.08)', padding: '1px 5px', borderRadius: 4 }}>{wish._type}</span>}
           <StatusBadge status={wish.status} />
           <span className="admin-item-time">{fmtTime(wish.createdAt)}</span>
           {showActions && <DeleteBtn id={wish.id} type="wish" disabled={operatingId === wish.id} onConfirm={() => handleDeleteWish(wish.id)} />}
@@ -288,7 +296,7 @@ export default function AdminPage({ user, onShowToast }) {
             <span className="admin-stat-label">待审流星</span>
           </div>
           <div className="admin-stat">
-            <span className="admin-stat-num" style={{ color: '#c9a7ff' }}>{wishStats.total || 0}</span>
+            <span className="admin-stat-num" style={{ color: '#b4a0fa' }}>{wishStats.total || 0}</span>
             <span className="admin-stat-label">回复</span>
           </div>
           <div className="admin-stat">
@@ -309,7 +317,9 @@ export default function AdminPage({ user, onShowToast }) {
 
       {/* Content */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: 24, fontSize: 10, color: 'rgba(255,255,255,0.12)' }}>加载中...</div>
+        <div style={{ padding: '20px 16px' }}>
+          <Skeleton lines={5} />
+        </div>
       ) : (
         <div className="admin-list">
           {tab === 'pending' && (
@@ -354,11 +364,11 @@ export default function AdminPage({ user, onShowToast }) {
               emptyIcon="👤"
               emptyText="暂无用户"
               renderItem={(u) => (
-                <div className="admin-item" key={`u-${u.id}`} style={{ borderLeftColor: u.isAdmin ? 'rgba(139,233,253,0.3)' : 'rgba(255,255,255,0.05)' }}>
+                <div className="admin-item" key={`u-${u.id}`} style={{ borderLeftColor: u.isAdmin ? 'rgba(103,232,249,0.3)' : 'rgba(255,255,255,0.05)' }}>
                   <div className="admin-item-header">
                     <span className="admin-item-user">
                       {u.nickname || u.username}
-                      {u.isAdmin && <span style={{ fontSize: 9, color: '#8be9fd', marginLeft: 4, background: 'rgba(139,233,253,0.1)', padding: '1px 5px', borderRadius: 4 }}>管理员</span>}
+                      {u.isAdmin && <span style={{ fontSize: 9, color: '#67e8f9', marginLeft: 4, background: 'rgba(103,232,249,0.1)', padding: '1px 5px', borderRadius: 4 }}>管理员</span>}
                       {u.isSponsor && <span style={{ fontSize: 9, color: '#ffb86c', marginLeft: 4, background: 'rgba(255,184,108,0.1)', padding: '1px 5px', borderRadius: 4 }}>赞助者</span>}
                     </span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>

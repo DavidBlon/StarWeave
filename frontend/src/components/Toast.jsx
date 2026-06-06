@@ -9,7 +9,7 @@ export default function Toast({ message, visible, onHide }) {
   }, [visible, onHide]);
 
   return (
-    <div className={`toast ${visible ? 'show' : ''}`}>
+    <div className={`toast ${visible ? 'show' : ''}`} role="status" aria-live="polite">
       <div className="text">{message}</div>
     </div>
   );

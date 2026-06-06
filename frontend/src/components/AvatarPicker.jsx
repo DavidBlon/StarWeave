@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from 'react';
 const AVATARS = ['✦', '★', '✧', '🌙', '☀', '🌊', '🌸', '🍃', '🌺', '🦋', '🐚', '⭐', '🌷', '🌿', '🍀', '🌈', '💫', '✨', '🕊', '🌻', '🌙'];
 
 const AVATAR_COLORS = [
-  ['#8be9fd', '#c9a7ff'],
+  ['#67e8f9', '#b4a0fa'],
   ['#ff9ff3', '#f368e0'],
   ['#ffd93d', '#ff9a3c'],
   ['#6bcb77', '#2d6a4f'],

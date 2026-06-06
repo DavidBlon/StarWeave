@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 8;
 
 export default function Pagination({ items, pageSize = PAGE_SIZE, renderItem, emptyIcon, emptyText }) {
   const [page, setPage] = useState(1);
@@ -15,8 +15,8 @@ export default function Pagination({ items, pageSize = PAGE_SIZE, renderItem, em
 
   if (items.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: 20, fontSize: 11, color: 'rgba(255,255,255,0.12)' }}>
-        {emptyIcon && <div style={{ fontSize: 24, marginBottom: 8 }}>{emptyIcon}</div>}
+      <div style={{ textAlign: 'center', padding: '32px 20px', fontSize: 12, color: 'rgba(255,255,255,0.35)', letterSpacing: 0.5 }}>
+        {emptyIcon && <div style={{ fontSize: 28, marginBottom: 10, opacity: 0.6 }}>{emptyIcon}</div>}
         {emptyText || '暂无数据'}
       </div>
     );

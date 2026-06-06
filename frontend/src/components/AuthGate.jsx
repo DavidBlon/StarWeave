@@ -73,14 +73,14 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
 
         <div className="auth-forms">
           <div className={`auth-form ${tab === 'login' ? 'active' : ''}`}>
-            <input className="auth-input" placeholder="用户名" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="off" />
-            <input className="auth-input" type="password" placeholder="密码" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="off" />
+            <input className="auth-input" placeholder="用户名" aria-label="用户名" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="username" />
+            <input className="auth-input" type="password" placeholder="密码" aria-label="密码" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="current-password" />
             <button className="auth-btn" onClick={handleLogin} disabled={loading || !agreed}>{loading ? '进入中...' : '进入星空'}</button>
           </div>
           <div className={`auth-form ${tab === 'register' ? 'active' : ''}`}>
-            <input className="auth-input" placeholder="名字（显示用，可留空）" value={regNick} onChange={e => setRegNick(e.target.value)} autoComplete="off" />
-            <input className="auth-input" placeholder="用户名（登录用）" value={regUser} onChange={e => setRegUser(e.target.value)} autoComplete="off" />
-            <input className="auth-input" type="password" placeholder="密码" value={regPass} onChange={e => setRegPass(e.target.value)} onKeyDown={e => handleKeyDown(e, handleRegister)} autoComplete="off" />
+            <input className="auth-input" placeholder="名字（显示用，可留空）" aria-label="昵称（可选）" value={regNick} onChange={e => setRegNick(e.target.value)} autoComplete="name" />
+            <input className="auth-input" placeholder="用户名（登录用）" aria-label="用户名" value={regUser} onChange={e => setRegUser(e.target.value)} autoComplete="username" />
+            <input className="auth-input" type="password" placeholder="密码" aria-label="密码" value={regPass} onChange={e => setRegPass(e.target.value)} onKeyDown={e => handleKeyDown(e, handleRegister)} autoComplete="new-password" />
             <button className="auth-btn" onClick={handleRegister} disabled={loading || !agreed}>{loading ? '注册中...' : '加入星空'}</button>
           </div>
         </div>
@@ -90,7 +90,7 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
             type="checkbox"
             checked={agreed}
             onChange={e => setAgreed(e.target.checked)}
-            style={{ accentColor: '#c9a7ff', cursor: 'pointer', width: 14, height: 14, flexShrink: 0 }}
+            style={{ accentColor: '#b4a0fa', cursor: 'pointer', width: 14, height: 14, flexShrink: 0 }}
           />
           <span className="auth-agree-text">我已阅读并同意</span>
           <span

@@ -134,7 +134,7 @@ function drawFrame(ctx, data, W, H, time) {
         ctx.beginPath();
         ctx.moveTo(brightStars[i].x, brightStars[i].y);
         ctx.lineTo(brightStars[j].x, brightStars[j].y);
-        ctx.strokeStyle = `rgba(139,233,253,${alpha})`;
+        ctx.strokeStyle = `rgba(103,232,249,${alpha})`;
         ctx.stroke();
       }
     }
@@ -208,7 +208,7 @@ function drawFrame(ctx, data, W, H, time) {
           ctx.beginPath();
           ctx.moveTo(constStars[i].x, constStars[i].y);
           ctx.lineTo(constStars[j].x, constStars[j].y);
-          ctx.strokeStyle = `rgba(139,233,253,${(1 - dist / 100) * 0.2})`;
+          ctx.strokeStyle = `rgba(103,232,249,${(1 - dist / 100) * 0.2})`;
           ctx.stroke();
         }
       }
@@ -238,10 +238,12 @@ function drawFrame(ctx, data, W, H, time) {
 
 // ===== 导出静态 PNG（不带动画） =====
 function exportStaticPNG(data, W, H) {
+  const scale = 3; // 3倍分辨率，导出2K清晰度 (2400x1800)
   const offscreen = document.createElement('canvas');
-  offscreen.width = W;
-  offscreen.height = H;
+  offscreen.width = W * scale;
+  offscreen.height = H * scale;
   const offCtx = offscreen.getContext('2d');
+  offCtx.scale(scale, scale);
   drawFrame(offCtx, data, W, H, 0);
   return offscreen.toDataURL('image/png');
 }
@@ -256,9 +258,12 @@ const StarMapCanvas = forwardRef(function StarMapCanvas({ text, width = 800, hei
     if (!canvasRef.current || !dataRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
     const start = performance.now();
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     function loop(now) {
       drawFrame(ctx, dataRef.current, width, height, now - start);
-      animRef.current = requestAnimationFrame(loop);
+      if (!prefersReducedMotion) {
+        animRef.current = requestAnimationFrame(loop);
+      }
     }
     animRef.current = requestAnimationFrame(loop);
   }, [width, height]);

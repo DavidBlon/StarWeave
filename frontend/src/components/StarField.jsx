@@ -196,6 +196,7 @@ export default function StarField({ paused = false }) {
 
     const ctx = canvas.getContext('2d')
     let animationId
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
     // 设置 canvas 大小
     const resize = () => {
@@ -237,7 +238,7 @@ export default function StarField({ paused = false }) {
 
     // 渲染函数
     function render(time) {
-      if (paused) {
+      if (paused && !prefersReducedMotion) {
         animationId = requestAnimationFrame(render)
         return
       }
@@ -317,7 +318,9 @@ export default function StarField({ paused = false }) {
       }
 
       frameRef.current++
-      animationId = requestAnimationFrame(render)
+      if (!prefersReducedMotion) {
+        animationId = requestAnimationFrame(render)
+      }
     }
 
     // 绘制流星

@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { getUserStats, updateProfile, uploadAvatar, uploadAvatarFile, changePassword, getUserMeteors, getCaughtMeteors, getUserWishes } from '../api';
+import { fmtTime, preview } from '../utils';
 import Pagination from './Pagination';
+import ConfirmModal from './ConfirmModal';
+import Skeleton from './Skeleton';
 
 export default function ProfilePage({
   user: initialUser,
@@ -32,12 +35,18 @@ export default function ProfilePage({
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState('');
 
+  // 退出确认
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
   // 编辑状态
   const [editingNickname, setEditingNickname] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
   const [nicknameDraft, setNicknameDraft] = useState('');
   const [bioDraft, setBioDraft] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // 列表退出动画
+  const [listLeaving, setListLeaving] = useState(false);
 
   const nicknameRef = useRef(null);
   const bioRef = useRef(null);
@@ -77,7 +86,7 @@ export default function ProfilePage({
     }
     const seed = (initialUser?.id || 0) % 8;
     const colors = [
-      ['#8be9fd', '#c9a7ff'],
+      ['#67e8f9', '#b4a0fa'],
       ['#ff9ff3', '#f368e0'],
       ['#ffd93d', '#ff9a3c'],
       ['#6bcb77', '#2d6a4f'],
@@ -125,8 +134,12 @@ export default function ProfilePage({
   }, [user?.id]);
 
   const closeList = useCallback(() => {
-    setViewList(null);
-    setListData([]);
+    setListLeaving(true);
+    setTimeout(() => {
+      setViewList(null);
+      setListData([]);
+      setListLeaving(false);
+    }, 250);
   }, []);
 
   useEffect(() => {
@@ -223,10 +236,10 @@ export default function ProfilePage({
           return prev;
         });
       } else {
-        alert(res.message || '保存失败');
+        if (onShowToast) onShowToast(res.message || '保存失败');
       }
     } catch (e) {
-      alert('保存失败，请重试');
+      if (onShowToast) onShowToast('保存失败，请重试');
     } finally {
       setSaving(false);
       setEditingNickname(false);
@@ -256,10 +269,10 @@ export default function ProfilePage({
         setUser(updated);
         if (onUserUpdate) onUserUpdate(updated);
       } else {
-        alert(res.message || '保存失败');
+        if (onShowToast) onShowToast(res.message || '保存失败');
       }
     } catch (e) {
-      alert('保存失败，请重试');
+      if (onShowToast) onShowToast('保存失败，请重试');
     } finally {
       setSaving(false);
       setEditingBio(false);
@@ -400,10 +413,6 @@ export default function ProfilePage({
         <span className="left">修改密码</span>
         <span className="right" />
       </div>
-      <div className="settings-item">
-        <span className="left">深空模式</span>
-        <span className="right">已开启</span>
-      </div>
       <div className="settings-item" onClick={() => onShowPolicy && onShowPolicy('agreement')} style={{ cursor: 'pointer' }}>
         <span className="left">用户协议</span>
         <span className="right" />
@@ -413,7 +422,7 @@ export default function ProfilePage({
         <span className="right" />
       </div>
 
-      <button className="btn-logout" onClick={onLogout}>退出登录</button>
+      <button className="btn-logout" onClick={() => setShowLogoutConfirm(true)}>退出登录</button>
 
       {/* 修改密码弹窗 */}
       {showPasswordModal && (
@@ -425,22 +434,28 @@ export default function ProfilePage({
               className="auth-input"
               type="password"
               placeholder="旧密码"
+              aria-label="旧密码"
               value={passwordForm.oldPassword}
               onChange={e => setPasswordForm(f => ({ ...f, oldPassword: e.target.value }))}
+              autoComplete="current-password"
             />
             <input
               className="auth-input"
               type="password"
               placeholder="新密码（至少 6 位）"
+              aria-label="新密码"
               value={passwordForm.newPassword}
               onChange={e => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
+              autoComplete="new-password"
             />
             <input
               className="auth-input"
               type="password"
               placeholder="确认新密码"
+              aria-label="确认新密码"
               value={passwordForm.confirmPassword}
               onChange={e => setPasswordForm(f => ({ ...f, confirmPassword: e.target.value }))}
+              autoComplete="new-password"
             />
             {passwordError && (
               <div style={{ fontSize: 11, color: '#ff6b6b', marginBottom: 8, textAlign: 'center' }}>
@@ -458,11 +473,24 @@ export default function ProfilePage({
         </div>
       )}
 
+      {/* 退出确认弹窗 */}
+      <ConfirmModal
+        show={showLogoutConfirm}
+        title="退出登录"
+        message="确定要退出登录吗？"
+        confirmText="退出"
+        onConfirm={() => {
+          setShowLogoutConfirm(false);
+          onLogout();
+        }}
+        onCancel={() => setShowLogoutConfirm(false)}
+      />
+
       {/* 赞助星海 — 暂隐藏，待与平台调试好后显示 */}
 
       {/* 统计列表详情 */}
       {viewList && (
-        <div className="profile-list-overlay">
+        <div className={`profile-list-overlay${listLeaving ? ' page-leaving' : ''}`}>
           <div className="profile-list-header">
             <button className="profile-list-back" onClick={closeList}>← 返回</button>
             <span className="profile-list-title">{LIST_TITLES[viewList]}</span>
@@ -471,7 +499,9 @@ export default function ProfilePage({
 
           <div className="profile-list-body">
             {listLoading ? (
-              <div className="profile-list-empty">加载中...</div>
+              <div style={{ padding: '20px 16px' }}>
+                <Skeleton lines={5} />
+              </div>
             ) : (
               <div className="profile-list-scroll">
                 <Pagination
@@ -514,7 +544,7 @@ export default function ProfilePage({
                             <span className="pli-time">{fmtTime(item.createdAt)}</span>
                           </div>
                           <div className="pli-preview">{preview(item.content, 120)}</div>
-                          <div className="pli-sub" style={{ color: 'rgba(139,233,253,0.35)', fontSize: 9 }}>
+                          <div className="pli-sub" style={{ color: 'rgba(103,232,249,0.35)', fontSize: 9 }}>
                             回应了：{preview(item.meteorContent, 40)}
                           </div>
                         </>
@@ -529,19 +559,4 @@ export default function ProfilePage({
       )}
     </div>
   );
-}
-
-function fmtTime(t) {
-  if (!t) return '';
-  const d = new Date(t);
-  const m = (d.getMonth() + 1).toString().padStart(2, '0');
-  const day = d.getDate().toString().padStart(2, '0');
-  const h = d.getHours().toString().padStart(2, '0');
-  const mi = d.getMinutes().toString().padStart(2, '0');
-  return `${m}-${day} ${h}:${mi}`;
-}
-
-function preview(text, len = 60) {
-  if (!text) return '';
-  return text.length > len ? text.substring(0, len) + '...' : text;
 }

@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getRandomMeteor, catchMeteor as apiCatch, makeWish as apiWish, getWishes, getCaughtMeteors } from '../api';
+import { fmtTime, preview } from '../utils';
 import Pagination from './Pagination';
+import Skeleton from './Skeleton';
 
 const EMPTY_REPLY = '还没有留言，来做第一个吧';
 
@@ -99,6 +101,22 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
       <button className="btn-catch" onClick={doCatch} disabled={loading}>
         {loading ? '正在捞取...' : '捞一颗流星'}
       </button>
+
+      {/* 引导提示 */}
+      {!visible && !meteor && (
+        <div style={{
+          textAlign: 'center',
+          padding: 0,
+          opacity: 0.25,
+          fontSize: 12,
+          letterSpacing: 1,
+          lineHeight: 1.6,
+        }}>
+          <div style={{ fontSize: 20, marginBottom: 6 }}>✨</div>
+          点击上方按钮，捞一颗流星看看
+        </div>
+      )}
+
       <div className={`meteor-card ${visible ? 'visible' : ''}`}>
         <div
           className="card-header"
@@ -122,7 +140,7 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
             <span style={{ marginRight: 8 }}>{replies.length} 条回复</span>
             <button className="btn-wish" onClick={doWish}>许个愿</button>
             {visible && meteor?.id && (
-              <button className="btn-detail" onClick={() => onViewMeteor && onViewMeteor(meteor.id)} style={{ marginLeft: 6, fontSize: 10, padding: '2px 6px', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 4, color: 'rgba(255,255,255,0.6)', cursor: 'pointer' }}>
+              <button className="btn-detail" onClick={() => onViewMeteor && onViewMeteor(meteor.id)}>
                 详情
               </button>
             )}
@@ -182,8 +200,8 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
       {showHistory && (
         <div className="history-list">
           {historyLoading ? (
-            <div style={{ textAlign: 'center', padding: 12, fontSize: 10, color: 'rgba(255,255,255,0.12)' }}>
-              加载中...
+            <div style={{ padding: '12px 0' }}>
+              <Skeleton lines={3} />
             </div>
           ) : (
             <Pagination
@@ -208,20 +226,4 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
       )}
     </div>
   );
-}
-
-// 格式化时间
-function fmtTime(t) {
-  if (!t) return '';
-  const d = new Date(t);
-  const m = (d.getMonth() + 1).toString().padStart(2, '0');
-  const day = d.getDate().toString().padStart(2, '0');
-  const h = d.getHours().toString().padStart(2, '0');
-  const mi = d.getMinutes().toString().padStart(2, '0');
-  return `${m}-${day} ${h}:${mi}`;
-}
-
-function preview(text, len = 30) {
-  if (!text) return '';
-  return text.length > len ? text.substring(0, len) + '...' : text;
 }

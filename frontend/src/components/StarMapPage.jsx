@@ -203,7 +203,7 @@ function HealingQuote() {
     <div style={{
       textAlign: 'center',
       fontSize: 12,
-      color: 'rgba(201,167,255,0.4)',
+      color: 'rgba(180,160,250,0.4)',
       letterSpacing: 2,
       height: 18,
       transition: 'opacity 0.6s ease',
@@ -271,18 +271,7 @@ export default function StarMapPage({ onShowToast }) {
     }
   }, [handleGenerate]);
 
-  // Canvas 外框呼吸光晕
-  const [glowIntensity, setGlowIntensity] = useState(0);
-  useEffect(() => {
-    let animId;
-    function breathe(now) {
-      const v = 0.4 + 0.6 * Math.sin(now * 0.0008);
-      setGlowIntensity(v);
-      animId = requestAnimationFrame(breathe);
-    }
-    animId = requestAnimationFrame(breathe);
-    return () => cancelAnimationFrame(animId);
-  }, []);
+  // Canvas 外框呼吸光晕已移至 CSS 动画 (canvas-glow-breathe)
 
   return (
     <div
@@ -306,7 +295,7 @@ export default function StarMapPage({ onShowToast }) {
         <div style={{ textAlign: 'center', marginTop: 4 }}>
           <div style={{
             fontSize: 18, fontWeight: 200, letterSpacing: 4,
-            background: 'linear-gradient(135deg, #c9a7ff, #8be9fd)',
+            background: 'linear-gradient(135deg, #b4a0fa, #67e8f9)',
             WebkitBackgroundClip: 'text', backgroundClip: 'text',
             WebkitTextFillColor: 'transparent',
           }}>✦ 织星海</div>
@@ -326,10 +315,11 @@ export default function StarMapPage({ onShowToast }) {
           onFocus={() => setInputFocused(true)}
           onBlur={() => setInputFocused(false)}
           placeholder="写下一段心事、一句话、一个名字……&#10;你的文字会变成一片独一无二的星空"
+          aria-label="写下一段心事"
           style={{
             width: '100%',
-            background: inputFocused ? 'rgba(139,233,253,0.03)' : 'rgba(255,255,255,0.02)',
-            border: `1px solid ${inputFocused ? 'rgba(139,233,253,0.15)' : 'rgba(255,255,255,0.06)'}`,
+            background: inputFocused ? 'rgba(103,232,249,0.03)' : 'rgba(255,255,255,0.02)',
+            border: `1px solid ${inputFocused ? 'rgba(103,232,249,0.15)' : 'rgba(255,255,255,0.06)'}`,
             borderRadius: 12,
             color: '#e0e0f0',
             fontSize: 14,
@@ -341,18 +331,16 @@ export default function StarMapPage({ onShowToast }) {
             fontFamily: 'inherit',
             outline: 'none',
             transition: 'all 0.4s ease',
-            boxShadow: inputFocused ? '0 0 20px rgba(139,233,253,0.05)' : 'none',
+            boxShadow: inputFocused ? '0 0 20px rgba(103,232,249,0.05)' : 'none',
           }}
         />
 
         {/* Canvas 区域 — 呼吸光晕外框 */}
-        <div style={{
+        <div className="starmap-canvas-glow" style={{
           position: 'relative',
           borderRadius: 16,
           overflow: 'hidden',
           background: '#060612',
-          boxShadow: `0 0 ${30 + glowIntensity * 40}px rgba(139,233,253,${0.02 + glowIntensity * 0.03}), 0 0 ${60 + glowIntensity * 60}px rgba(201,167,255,${0.01 + glowIntensity * 0.02})`,
-          transition: 'box-shadow 0.1s linear',
         }}>
           <StarMapCanvas ref={canvasRef} text={displayText} />
           {/* 星光爆发层 */}
@@ -366,7 +354,7 @@ export default function StarMapPage({ onShowToast }) {
             onClick={handleGenerate}
             style={{
               padding: '10px 28px', borderRadius: 10, fontSize: 13, letterSpacing: 1,
-              background: 'linear-gradient(135deg, #8be9fd, #c9a7ff)',
+              background: 'linear-gradient(135deg, #67e8f9, #b4a0fa)',
               color: '#0a0a1a', border: 'none', fontWeight: 500,
               width: 'auto', margin: 0,
               position: 'relative',

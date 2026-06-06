@@ -62,8 +62,9 @@ StarWeave/
 │   ├── vite.config.js
 │   ├── public/                 # 静态资源（背景音乐等）
 │   └── src/
-│       ├── components/         # AuthGate, MeteorCard, StarMapPage, StarMapCanvas, MusicPlayer, LegalPage 等
+│       ├── components/         # AuthGate, LaunchPage, CatchPage, ProfilePage, MeteorDetailPage, StarMapPage, AdminPage 等
 │       ├── api/                # Axios API 客户端
+│       ├── utils.js            # 共享工具函数（fmtTime, preview）
 │       └── styles/             # 全局 CSS（暗色星空主题）
 └── CLAUDE.md
 ```
@@ -173,3 +174,14 @@ sudo nginx -s reload
 - 星空背景：纯 Canvas 2D 模拟地球视角星空（800 颗随机星星 + 12 颗一等星 + 星座连线 + 流星效果），移除 Three.js 依赖
 - 2025-06：Nginx 部署配置完成
 - 移动端适配：浏览器底部工具栏遮挡修复（`100vh` → JS 动态 `--vh` CSS 变量），解决底部导航按钮不可见问题
+- 2026-06：前端 UI/UX 全面优化
+  - 设计令牌系统：CSS 变量统一颜色/圆角/间距
+  - 页面切换动画：入场/退出动画（pageIn/pageOut）
+  - 骨架屏加载状态：Skeleton 组件统一加载体验
+  - 自定义确认弹窗：ConfirmModal 替代 window.confirm/alert
+  - 全局错误边界：ErrorBoundary 防止白屏
+  - 无障碍优化：ARIA 标签、键盘导航、减少动画偏好支持
+  - 登录态持久化：localStorage 保存用户状态，刷新无需重新登录
+  - Token 校验：启动时验证登录态有效性
+  - 星图导出升级：支持 2K 分辨率（2400×1800）高清 PNG
+  - 后台管理优化：按 Tab 按需加载数据，提升性能

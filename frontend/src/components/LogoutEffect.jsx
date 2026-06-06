@@ -6,6 +6,12 @@ export default function LogoutEffect({ show, onComplete }) {
   useEffect(() => {
     if (!show) return;
 
+    // reduced-motion: 跳过动画，直接完成
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onComplete?.();
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -18,7 +24,7 @@ export default function LogoutEffect({ show, onComplete }) {
     const targetY = boxRect ? boxRect.top + boxRect.height / 2 : ch / 2;
 
     // 逆向粒子：从边缘向中心汇聚
-    const P_COLORS = ['139,233,253', '201,167,255', '255,255,255', '255,217,61', '85,239,196'];
+    const P_COLORS = ['103,232,249', '180,160,250', '255,255,255', '255,217,61', '85,239,196'];
     const particles = [];
     for (let i = 0; i < 240; i++) {
       const edge = Math.floor(Math.random() * 4);
@@ -124,8 +130,8 @@ export default function LogoutEffect({ show, onComplete }) {
         flashDone = true;
         const burstGrad = ctx.createRadialGradient(targetX, targetY, 0, targetX, targetY, 250);
         burstGrad.addColorStop(0, 'rgba(255,255,255,0.7)');
-        burstGrad.addColorStop(0.2, 'rgba(139,233,253,0.35)');
-        burstGrad.addColorStop(0.5, 'rgba(201,167,255,0.12)');
+        burstGrad.addColorStop(0.2, 'rgba(103,232,249,0.35)');
+        burstGrad.addColorStop(0.5, 'rgba(180,160,250,0.12)');
         burstGrad.addColorStop(1, 'transparent');
         ctx.beginPath();
         ctx.arc(targetX, targetY, 250, 0, Math.PI * 2);
@@ -150,7 +156,7 @@ export default function LogoutEffect({ show, onComplete }) {
         const fadeAlpha = Math.max(0, 1 - fadeP);
         const afterGlow = ctx.createRadialGradient(targetX, targetY, 0, targetX, targetY, 180);
         afterGlow.addColorStop(0, `rgba(255,255,255,${fadeAlpha * 0.2})`);
-        afterGlow.addColorStop(0.5, `rgba(139,233,253,${fadeAlpha * 0.08})`);
+        afterGlow.addColorStop(0.5, `rgba(103,232,249,${fadeAlpha * 0.08})`);
         afterGlow.addColorStop(1, 'transparent');
         ctx.beginPath();
         ctx.arc(targetX, targetY, 180, 0, Math.PI * 2);
@@ -162,7 +168,7 @@ export default function LogoutEffect({ show, onComplete }) {
           const d = 20 + Math.random() * 100;
           ctx.beginPath();
           ctx.arc(targetX + Math.cos(a) * d, targetY + Math.sin(a) * d, 0.5 + Math.random(), 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(201,167,255,${fadeAlpha * s * 0.15})`;
+          ctx.fillStyle = `rgba(180,160,250,${fadeAlpha * s * 0.15})`;
           ctx.fill();
         }
       }

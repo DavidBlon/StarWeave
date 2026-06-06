@@ -27,20 +27,25 @@ export default function MusicPlayer() {
   return (
     <>
       <audio ref={audioRef} src="/背景音乐.mp3" preload="auto" />
-      <div className={`music-player ${playing ? 'playing' : ''}`} onClick={toggle}>
+      <button
+        className={`music-player ${playing ? 'playing' : ''}`}
+        onClick={toggle}
+        aria-label={playing ? '暂停背景音乐' : '播放背景音乐'}
+        type="button"
+      >
         {/* 唱片图标 */}
-        <svg viewBox="0 0 24 24" width={20} height={20}>
-          <circle cx="12" cy="12" r="10" fill="none" stroke="rgba(201,167,255,0.5)" strokeWidth="0.8" />
-          <circle cx="12" cy="12" r="7" fill="none" stroke="rgba(201,167,255,0.2)" strokeWidth="0.5" />
-          <circle cx="12" cy="12" r="4" fill="none" stroke="rgba(201,167,255,0.35)" strokeWidth="0.6" />
-          <circle cx="12" cy="12" r="1.5" fill="rgba(201,167,255,0.6)" />
+        <svg viewBox="0 0 24 24" width={20} height={20} aria-hidden="true">
+          <circle cx="12" cy="12" r="10" fill="none" stroke="rgba(180,160,250,0.5)" strokeWidth="0.8" />
+          <circle cx="12" cy="12" r="7" fill="none" stroke="rgba(180,160,250,0.2)" strokeWidth="0.5" />
+          <circle cx="12" cy="12" r="4" fill="none" stroke="rgba(180,160,250,0.35)" strokeWidth="0.6" />
+          <circle cx="12" cy="12" r="1.5" fill="rgba(180,160,250,0.6)" />
           {/* 音符 */}
           {!playing && (
             <path d="M9.5 7.5v7a2 2 0 1 1-1.5-1.94V9l6-1.5v5.5a2 2 0 1 1-1.5-1.94V7.5L9.5 7.5z"
-              fill="none" stroke="rgba(201,167,255,0.5)" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" />
+              fill="none" stroke="rgba(180,160,250,0.5)" strokeWidth="0.8" strokeLinecap="round" strokeLinejoin="round" />
           )}
         </svg>
-      </div>
+      </button>
     </>
   );
 }

@@ -1,6 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { publishMeteor, getUserMeteors } from '../api';
+import { fmtTime, preview } from '../utils';
 import Pagination from './Pagination';
+import Skeleton from './Skeleton';
 
 const HEALING_EMOJIS = {
   '会好的': '🌱',
@@ -145,7 +147,7 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
               }
             })
             .catch(() => {
-              onShowToast('审核通过了，已飞向星空');
+              onShowToast('发射失败，请稍后重试');
             })
             .finally(() => {
               setGathering(false);
@@ -167,10 +169,11 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
   }, [text, user, onShowToast]);
 
   return (
-    <div className="page active" id="pageLaunch">
+    <div className="page active" id="pageLaunch" style={showMyMeteors ? { display: 'flex', flexDirection: 'column', height: 'auto', minHeight: '100%' } : undefined}>
       <div className={`launch-card ${gathering ? 'gathering' : ''}`} ref={cardRef}>
         <textarea
           placeholder="写下你的烦恼&#10;它会变成一颗流星划过夜空"
+          aria-label="写下你的烦恼"
           maxLength={200}
           rows={4}
           value={text}
@@ -202,10 +205,10 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
         </svg>
       </div>
       {showMyMeteors && (
-        <div className="my-meteors-list" style={{ marginTop: 8 }}>
+        <div className="my-meteors-list" style={{ marginTop: 8, flex: 1, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
           {myMeteorsLoading ? (
-            <div style={{ textAlign: 'center', padding: 12, fontSize: 10, color: 'rgba(255,255,255,0.12)' }}>
-              加载中...
+            <div style={{ padding: '12px 0' }}>
+              <Skeleton lines={3} />
             </div>
           ) : (
             <Pagination
@@ -225,7 +228,7 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
                     </span>
                     <span className="my-meteor-time">{fmtTime(m.createdAt)}</span>
                   </div>
-                  <div className="my-meteor-content">{preview(m.content, 120)}</div>
+                  <div className="my-meteor-content">{preview(m.content, 200)}</div>
                   <div className="my-meteor-click-hint">点击查看详情</div>
                 </div>
               )}
@@ -247,19 +250,4 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
       )}
     </div>
   );
-}
-
-function fmtTime(t) {
-  if (!t) return '';
-  const d = new Date(t);
-  const m = (d.getMonth() + 1).toString().padStart(2, '0');
-  const day = d.getDate().toString().padStart(2, '0');
-  const h = d.getHours().toString().padStart(2, '0');
-  const mi = d.getMinutes().toString().padStart(2, '0');
-  return `${m}-${day} ${h}:${mi}`;
-}
-
-function preview(text, len = 60) {
-  if (!text) return '';
-  return text.length > len ? text.substring(0, len) + '...' : text;
 }

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import StarField from './components/StarField';
 import AuthGate from './components/AuthGate';
 import LaunchPage from './components/LaunchPage';
@@ -16,8 +16,14 @@ import MusicPlayer from './components/MusicPlayer';
 import { getUser } from './api';
 
 export default function App() {
-  const [user, setUser] = useState(null);
-  const [loggedIn, setLoggedIn] = useState(false);
+  // 从 localStorage 恢复登录状态
+  const [user, setUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('starweave_user');
+      return saved ? JSON.parse(saved) : null;
+    } catch { return null; }
+  });
+  const [loggedIn, setLoggedIn] = useState(() => !!localStorage.getItem('starweave_user'));
   const [activeTab, setActiveTab] = useState('launch');
   const [toastMsg, setToastMsg] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
@@ -31,6 +37,26 @@ export default function App() {
 
   const loginEffectPendingRef = useRef(false);
   const logoutEffectPendingRef = useRef(false);
+
+  // 登录态校验：恢复登录时验证 token 是否有效
+  useEffect(() => {
+    if (user?.id) {
+      getUser(user.id).then(res => {
+        if (res.code === 200) {
+          setUser(res.data);
+          localStorage.setItem('starweave_user', JSON.stringify(res.data));
+        } else {
+          setUser(null);
+          setLoggedIn(false);
+          localStorage.removeItem('starweave_user');
+        }
+      }).catch(() => {
+        setUser(null);
+        setLoggedIn(false);
+        localStorage.removeItem('starweave_user');
+      });
+    }
+  }, []); // 仅在挂载时执行一次
 
   // Toast
   const showToast = useCallback((msg) => {
@@ -50,6 +76,7 @@ export default function App() {
   // Login handler
   const handleLogin = useCallback((userData) => {
     setUser(userData);
+    localStorage.setItem('starweave_user', JSON.stringify(userData));
     setShowLoginEffect(true);
     loginEffectPendingRef.current = true;
   }, []);
@@ -70,6 +97,7 @@ export default function App() {
   const handleLogoutEffectComplete = useCallback(() => {
     setLoggedIn(false);
     setUser(null);
+    localStorage.removeItem('starweave_user');
     setStarPaused(false);
     setShowLogoutEffect(false);
     setActiveTab('launch');
@@ -78,9 +106,13 @@ export default function App() {
   // Profile update — refresh user state from server
   const handleUserUpdate = useCallback((updatedUser) => {
     setUser(updatedUser);
+    localStorage.setItem('starweave_user', JSON.stringify(updatedUser));
     if (updatedUser?.id) {
       getUser(updatedUser.id).then(res => {
-        if (res.code === 200) setUser(res.data);
+        if (res.code === 200) {
+          setUser(res.data);
+          localStorage.setItem('starweave_user', JSON.stringify(res.data));
+        }
       }).catch(() => {});
     }
   }, []);
@@ -191,13 +223,15 @@ export default function App() {
       <MusicPlayer />
 
       <div className="app-container">
-        {/* Top Bar */}
-        <div className="top-bar" id="topBar" style={{ opacity: loggedIn ? 1 : 1 }}>
-          <h1>流星树洞</h1>
-          <p>让烦恼化作流星，消失在星河里</p>
-        </div>
+        {/* Top Bar — 登录后隐藏 */}
+        {!loggedIn && (
+          <div className="top-bar" id="topBar">
+            <h1>流星树洞</h1>
+            <p>让烦恼化作流星，消失在星河里</p>
+          </div>
+        )}
 
-        <div className="page-content" id="pageContent">
+        <div className="page-content" id="pageContent" style={loggedIn ? { paddingTop: 50 } : undefined}>
           {/* Auth Gate */}
           {!loggedIn && (
             <div id="authGate" style={{ height: '100%' }}>
@@ -210,9 +244,9 @@ export default function App() {
         </div>
 
         {/* Bottom Tabs */}
-        <div className={`bottom-tabs ${!loggedIn ? 'locked' : ''}`} id="bottomTabs">
+        <nav className={`bottom-tabs ${!loggedIn ? 'locked' : ''}`} id="bottomTabs" role="navigation" aria-label="主导航">
           <button className={`tab-item ${activeTab === 'launch' ? 'active' : ''}`} data-tab="launch" onClick={() => switchTab('launch')}>
-            <span className="tab-icon">
+            <span className="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
               </svg>
@@ -220,7 +254,7 @@ export default function App() {
             <span className="tab-label">写流星</span>
           </button>
           <button className={`tab-item ${activeTab === 'catch' ? 'active' : ''}`} data-tab="catch" onClick={() => switchTab('catch')}>
-            <span className="tab-icon">
+            <span className="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/><path d="M12 2v6"/><path d="M12 16v6"/><path d="M2 12h6"/><path d="M16 12h6"/>
               </svg>
@@ -228,7 +262,7 @@ export default function App() {
             <span className="tab-label">捞流星</span>
           </button>
           <button className={`tab-item ${activeTab === 'starmap' ? 'active' : ''}`} data-tab="starmap" onClick={() => switchTab('starmap')}>
-            <span className="tab-icon">
+            <span className="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
               </svg>
@@ -236,7 +270,7 @@ export default function App() {
             <span className="tab-label">星图</span>
           </button>
           <button className={`tab-item ${activeTab === 'profile' ? 'active' : ''}`} data-tab="profile" onClick={() => switchTab('profile')}>
-            <span className="tab-icon">
+            <span className="tab-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
               </svg>
@@ -246,7 +280,7 @@ export default function App() {
           {/* 管理员审核入口 — 仅对管理员可见 */}
           {user?.isAdmin && (
             <button className={`tab-item ${activeTab === 'admin' ? 'active' : ''}`} data-tab="admin" onClick={() => switchTab('admin')}>
-              <span className="tab-icon">
+              <span className="tab-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                   <path d="M9 12l2 2 4-4"/>
@@ -255,7 +289,7 @@ export default function App() {
               <span className="tab-label">审核</span>
             </button>
           )}
-        </div>
+        </nav>
       </div>
 
       {/* Effect overlays */}

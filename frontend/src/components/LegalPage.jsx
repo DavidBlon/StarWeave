@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 const AGREEMENT_CONTENT = `
 # 流星树洞 · 用户协议
@@ -224,13 +224,19 @@ const POLICY_CONTENT = `
 
 export default function LegalPage({ defaultTab = 'agreement', onClose }) {
   const [tab, setTab] = useState(defaultTab);
+  const [leaving, setLeaving] = useState(false);
+
+  const handleBack = useCallback(() => {
+    setLeaving(true);
+    setTimeout(() => onClose?.(), 250);
+  }, [onClose]);
 
   const content = tab === 'agreement' ? AGREEMENT_CONTENT : POLICY_CONTENT;
 
   return (
-    <div className="profile-list-overlay">
+    <div className={`profile-list-overlay${leaving ? ' page-leaving' : ''}`}>
       <div className="profile-list-header">
-        <button className="profile-list-back" onClick={onClose}>← 返回</button>
+        <button className="profile-list-back" onClick={handleBack}>← 返回</button>
         <span className="profile-list-title">
           {tab === 'agreement' ? '用户协议' : '隐私政策'}
         </span>
@@ -251,10 +257,10 @@ export default function LegalPage({ defaultTab = 'agreement', onClose }) {
             padding: '10px 0',
             background: 'none',
             border: 'none',
-            color: tab === 'agreement' ? '#c9a7ff' : 'rgba(255,255,255,0.4)',
+            color: tab === 'agreement' ? '#b4a0fa' : 'rgba(255,255,255,0.4)',
             fontSize: 13,
             fontWeight: tab === 'agreement' ? 600 : 400,
-            borderBottom: tab === 'agreement' ? '2px solid #c9a7ff' : '2px solid transparent',
+            borderBottom: tab === 'agreement' ? '2px solid #b4a0fa' : '2px solid transparent',
             cursor: 'pointer',
             transition: 'all 0.2s',
           }}
@@ -268,10 +274,10 @@ export default function LegalPage({ defaultTab = 'agreement', onClose }) {
             padding: '10px 0',
             background: 'none',
             border: 'none',
-            color: tab === 'policy' ? '#c9a7ff' : 'rgba(255,255,255,0.4)',
+            color: tab === 'policy' ? '#b4a0fa' : 'rgba(255,255,255,0.4)',
             fontSize: 13,
             fontWeight: tab === 'policy' ? 600 : 400,
-            borderBottom: tab === 'policy' ? '2px solid #c9a7ff' : '2px solid transparent',
+            borderBottom: tab === 'policy' ? '2px solid #b4a0fa' : '2px solid transparent',
             cursor: 'pointer',
             transition: 'all 0.2s',
           }}
@@ -292,7 +298,7 @@ export default function LegalPage({ defaultTab = 'agreement', onClose }) {
         }}>
           {content.split('\n').map((line, i) => {
             if (line.startsWith('# ')) {
-              return <h2 key={i} style={{ fontSize: 18, fontWeight: 600, color: '#c9a7ff', margin: '16px 0 8px', lineHeight: 1.4 }}>{line.replace(/^# /, '')}</h2>;
+              return <h2 key={i} style={{ fontSize: 18, fontWeight: 600, color: '#b4a0fa', margin: '16px 0 8px', lineHeight: 1.4 }}>{line.replace(/^# /, '')}</h2>;
             }
             if (line.startsWith('## ')) {
               return <h3 key={i} style={{ fontSize: 15, fontWeight: 600, color: '#e0e0f0', margin: '20px 0 6px', lineHeight: 1.4 }}>{line.replace(/^## /, '')}</h3>;
@@ -303,7 +309,7 @@ export default function LegalPage({ defaultTab = 'agreement', onClose }) {
             if (line.startsWith('- **')) {
               const match = line.match(/^- \*\*(.+?)\*\*：?(.*)$/);
               if (match) {
-                return <div key={i} style={{ margin: '4px 0', paddingLeft: 12 }}><span style={{ color: '#8be9fd', fontWeight: 500 }}>{match[1]}</span>{match[2] ? `：${match[2]}` : ''}</div>;
+                return <div key={i} style={{ margin: '4px 0', paddingLeft: 12 }}><span style={{ color: '#67e8f9', fontWeight: 500 }}>{match[1]}</span>{match[2] ? `：${match[2]}` : ''}</div>;
               }
             }
             if (line.startsWith('- ')) {

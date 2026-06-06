@@ -6,6 +6,12 @@ export default function LoginEffect({ show, onComplete }) {
   useEffect(() => {
     if (!show) return;
 
+    // reduced-motion: 跳过动画，直接完成
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      onComplete?.();
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -20,7 +26,7 @@ export default function LoginEffect({ show, onComplete }) {
     const boxArea = boxRect ? Math.sqrt(boxRect.width * boxRect.height) * 0.45 : 100;
 
     // Phase 1: 卡片解构粒子
-    const P_COLORS = ['139,233,253', '201,167,255', '255,255,255', '255,217,61', '85,239,196'];
+    const P_COLORS = ['103,232,249', '180,160,250', '255,255,255', '255,217,61', '85,239,196'];
     const particles = [];
     for (let i = 0; i < 200; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -121,8 +127,8 @@ export default function LoginEffect({ show, onComplete }) {
         const alpha = m.alp * (1 - p * 0.6);
         const grad = ctx.createLinearGradient(x, y, tx, ty);
         grad.addColorStop(0, `rgba(255,255,255,${alpha})`);
-        grad.addColorStop(0.15, `rgba(139,233,253,${alpha * 0.35})`);
-        grad.addColorStop(0.5, `rgba(139,233,253,${alpha * 0.1})`);
+        grad.addColorStop(0.15, `rgba(103,232,249,${alpha * 0.35})`);
+        grad.addColorStop(0.5, `rgba(103,232,249,${alpha * 0.1})`);
         grad.addColorStop(1, 'transparent');
         ctx.beginPath();
         ctx.moveTo(x, y);
