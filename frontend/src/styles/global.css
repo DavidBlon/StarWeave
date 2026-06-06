@@ -266,7 +266,7 @@ body {
 }
 .auth-tab:hover { color: rgba(255,255,255,0.6); }
 
-.auth-forms { position: relative; height: 230px; }
+.auth-forms { position: relative; height: 290px; }
 .auth-form {
   position: absolute; inset: 0;
   opacity: 0; pointer-events: none;
@@ -282,6 +282,21 @@ body {
 }
 .auth-input:focus { border-color: rgba(103,232,249,0.2); }
 .auth-input::placeholder { color: rgba(255,255,255,0.55); }
+
+/* 验证码行 */
+.captcha-row {
+  display: flex; gap: 8px; align-items: center; margin-bottom: 10px;
+}
+.captcha-row .captcha-input {
+  flex: 1; margin-bottom: 0;
+}
+.captcha-img {
+  height: 40px; width: 100px; border-radius: var(--radius-input);
+  cursor: pointer; border: 1px solid rgba(255,255,255,0.06);
+  object-fit: contain; background: rgba(255,255,255,0.02);
+  transition: border-color 0.3s; flex-shrink: 0;
+}
+.captcha-img:hover { border-color: rgba(103,232,249,0.2); }
 
 .auth-btn {
   width: 100%; padding: 11px; margin-top: 6px;

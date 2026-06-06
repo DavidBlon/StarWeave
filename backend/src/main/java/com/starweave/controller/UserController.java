@@ -3,6 +3,7 @@ package com.starweave.controller;
 import com.starweave.dto.ApiResponse;
 import com.starweave.dto.UserStats;
 import com.starweave.entity.User;
+import com.starweave.service.CaptchaService;
 import com.starweave.service.UserService;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +15,11 @@ import java.util.Map;
 public class UserController {
 
     private final UserService userService;
+    private final CaptchaService captchaService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, CaptchaService captchaService) {
         this.userService = userService;
+        this.captchaService = captchaService;
     }
 
     /**
@@ -49,12 +52,17 @@ public class UserController {
         String username = body.get("username");
         String nickname = body.get("nickname");
         String password = body.get("password");
+        String captchaId = body.get("captchaId");
+        String captcha = body.get("captcha");
 
         if (username == null || username.isBlank()) {
             return ApiResponse.badRequest("用户名不能为空");
         }
         if (password == null || password.length() < 6) {
             return ApiResponse.badRequest("密码至少 6 位");
+        }
+        if (!captchaService.verify(captchaId, captcha)) {
+            return ApiResponse.badRequest("验证码错误或已过期");
         }
         username = username.strip();
         if (username.length() > 20) {
@@ -76,12 +84,18 @@ public class UserController {
     public ApiResponse<User> loginWithPassword(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
+        String captchaId = body.get("captchaId");
+        String captcha = body.get("captcha");
 
         if (username == null || username.isBlank()) {
             return ApiResponse.badRequest("用户名不能为空");
         }
         if (password == null || password.isBlank()) {
             return ApiResponse.badRequest("密码不能为空");
+        }
+
+        if (!captchaService.verify(captchaId, captcha)) {
+            return ApiResponse.badRequest("验证码错误或已过期");
         }
 
         try {

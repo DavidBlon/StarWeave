@@ -16,6 +16,7 @@
 - ✨ **星图治愈特效** — 浮动星尘、星光爆发、治愈语句轮播、呼吸光晕
 - 🎵 **背景音乐** — 右上角旋转唱片图标，点击切换播放 / 暂停
 - 📡 **实时推送** — WebSocket 广播，新流星 / 捞起事件即时通知
+- 🔐 **图形验证码** — 注册 / 登录双重人机验证，防止恶意刷号
 - 🛡️ **内容审核** — 流星 + 回复双重 AI 审核，管理员可审核/删除/管理用户
 - 📜 **用户协议 & 隐私政策** — 登录注册前必须同意，个人页可随时查看
 - 💖 **星光守护者** — 赞助体系，专属星图边框与荣誉展示
@@ -41,6 +42,10 @@ StarWeave/
 │       └── resources/
 │           ├── application.yml
 │           └── mapper/         # MyBatis XML 映射
+├── android/                    # Android 原生客户端
+│   ├── app/
+│   ├── build.gradle.kts
+│   └── settings.gradle.kts
 ├── frontend/                   # React 18 + Vite 前端
 │   ├── vite.config.js
 │   ├── public/                 # 静态资源（背景音乐等）
@@ -92,6 +97,7 @@ npm run dev
 | `POST` | `/api/user/login` | 匿名登录/注册 |
 | `POST` | `/api/user/register` | 账号注册 |
 | `POST` | `/api/user/login-password` | 账号密码登录 |
+| `GET` | `/api/captcha` | 获取图形验证码 |
 | `GET` | `/api/user/{id}` | 用户信息 |
 | `GET` | `/api/message/floating` | 漂流中的流星列表 |
 | `POST` | `/api/message/publish` | 发布流星（自动审核） |
@@ -212,6 +218,9 @@ sudo nginx -s reload
 - 2025-06：星空背景改为纯 Canvas 2D 模拟（移除 Three.js 依赖）
 - 2025-06：Nginx 部署配置完成
 - 2025-06：修复移动端浏览器底部工具栏遮挡页面内容问题（`100vh` → JS 动态 `--vh` CSS 变量）
+- 2026-06：前端 UI/UX 全面优化（设计令牌、骨架屏、自定义弹窗、错误边界、无障碍、登录态持久化）
+- 2026-06：图形验证码系统（注册 / 登录人机验证，防刷号）
+- 2026-06：Android 原生客户端项目初始化
 
 ---
 

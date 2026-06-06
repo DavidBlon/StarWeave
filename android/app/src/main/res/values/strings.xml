@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">StarWeave</string>
+    <string name="top_title">StarWeave</string>
+    <string name="top_subtitle">让烦恼化作流星，消失在星河里</string>
+    <string name="tab_launch">写流星</string>
+    <string name="tab_catch">捞流星</string>
+    <string name="tab_starmap">星图</string>
+    <string name="tab_profile">我的</string>
+    <string name="tab_admin">审核</string>
+    <string name="login">登录</string>
+    <string name="register">注册</string>
+    <string name="username">用户名</string>
+    <string name="password">密码</string>
+    <string name="nickname">昵称</string>
+    <string name="logout">退出登录</string>
+    <string name="agreement_title">用户协议</string>
+    <string name="privacy_title">隐私政策</string>
+</resources>

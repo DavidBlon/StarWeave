@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { loginWithPassword, register } from '../api';
+import { useState, useEffect, useCallback } from 'react';
+import { loginWithPassword, register, getCaptcha } from '../api';
 
 export default function AuthGate({ onLogin, onShowPolicy }) {
   const [tab, setTab] = useState('login');
@@ -12,21 +12,51 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 验证码状态
+  const [captchaId, setCaptchaId] = useState('');
+  const [captchaImage, setCaptchaImage] = useState('');
+  const [captchaInput, setCaptchaInput] = useState('');
+
+  const fetchCaptcha = useCallback(async () => {
+    try {
+      const res = await getCaptcha();
+      if (res.code === 200 && res.data) {
+        setCaptchaId(res.data.captchaId);
+        setCaptchaImage(res.data.image);
+        setCaptchaInput('');
+      }
+    } catch {
+      // 验证码加载失败不阻塞用户
+    }
+  }, []);
+
+  // 挂载时获取验证码
+  useEffect(() => { fetchCaptcha(); }, [fetchCaptcha]);
+
+  // 切换 tab 时刷新验证码
+  const switchTab = (t) => {
+    setTab(t);
+    setError('');
+    fetchCaptcha();
+  };
+
   const handleLogin = async () => {
     if (!username || !password) { setError('请填写用户名和密码'); return; }
+    if (!captchaInput) { setError('请填写验证码'); return; }
     if (!agreed) { setError('请先阅读并同意用户协议和隐私政策'); return; }
     setError('');
     setLoading(true);
     try {
-      const res = await loginWithPassword(username, password);
+      const res = await loginWithPassword(username, password, captchaId, captchaInput);
       if (res.code === 200) {
         onLogin(res.data);
       } else {
         setError(res.message || '登录失败');
+        fetchCaptcha();
       }
     } catch (e) {
-      const msg = e.response?.data?.message || '连接星海失败';
-      setError(msg);
+      setError(e.response?.data?.message || '连接星海失败');
+      fetchCaptcha();
     }
     setLoading(false);
   };
@@ -34,18 +64,22 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
   const handleRegister = async () => {
     const nickname = regNick.trim() || '';
     if (!regUser || !regPass) { setError('请填写用户名和密码'); return; }
+    if (!captchaInput) { setError('请填写验证码'); return; }
     if (!agreed) { setError('请先阅读并同意用户协议和隐私政策'); return; }
     setError('');
     setLoading(true);
     try {
-      const res = await register(regUser, nickname, regPass);
+      const res = await register(regUser, nickname, regPass, captchaId, captchaInput);
       if (res.code === 200) {
         onLogin(res.data);
       } else {
         setError(res.message || '注册失败');
+        fetchCaptcha();
       }
     } catch (e) {
-      setError(e.response?.data?.message || '连接星海失败');
+      const msg = e.response?.data?.message || '连接星海失败';
+      setError(msg);
+      fetchCaptcha();
     }
     setLoading(false);
   };
@@ -65,8 +99,8 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
 
       <div className="auth-box">
         <div className="auth-tabs">
-          <button className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => setTab('login')}>登录</button>
-          <button className={`auth-tab ${tab === 'register' ? 'active' : ''}`} onClick={() => setTab('register')}>注册</button>
+          <button className={`auth-tab ${tab === 'login' ? 'active' : ''}`} onClick={() => switchTab('login')}>登录</button>
+          <button className={`auth-tab ${tab === 'register' ? 'active' : ''}`} onClick={() => switchTab('register')}>注册</button>
         </div>
 
         {error && <div style={{ color: '#ff6b6b', fontSize: 11, textAlign: 'center', marginBottom: 8 }}>{error}</div>}
@@ -75,12 +109,24 @@ export default function AuthGate({ onLogin, onShowPolicy }) {
           <div className={`auth-form ${tab === 'login' ? 'active' : ''}`}>
             <input className="auth-input" placeholder="用户名" aria-label="用户名" value={username} onChange={e => setUsername(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="username" />
             <input className="auth-input" type="password" placeholder="密码" aria-label="密码" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} autoComplete="current-password" />
+            <div className="captcha-row">
+              <input className="auth-input captcha-input" placeholder="验证码" aria-label="验证码" value={captchaInput} onChange={e => setCaptchaInput(e.target.value)} onKeyDown={e => handleKeyDown(e, handleLogin)} maxLength={6} />
+              {captchaImage && (
+                <img className="captcha-img" src={captchaImage} alt="验证码" onClick={fetchCaptcha} title="点击刷新验证码" />
+              )}
+            </div>
             <button className="auth-btn" onClick={handleLogin} disabled={loading || !agreed}>{loading ? '进入中...' : '进入星空'}</button>
           </div>
           <div className={`auth-form ${tab === 'register' ? 'active' : ''}`}>
             <input className="auth-input" placeholder="名字（显示用，可留空）" aria-label="昵称（可选）" value={regNick} onChange={e => setRegNick(e.target.value)} autoComplete="name" />
             <input className="auth-input" placeholder="用户名（登录用）" aria-label="用户名" value={regUser} onChange={e => setRegUser(e.target.value)} autoComplete="username" />
             <input className="auth-input" type="password" placeholder="密码" aria-label="密码" value={regPass} onChange={e => setRegPass(e.target.value)} onKeyDown={e => handleKeyDown(e, handleRegister)} autoComplete="new-password" />
+            <div className="captcha-row">
+              <input className="auth-input captcha-input" placeholder="验证码" aria-label="验证码" value={captchaInput} onChange={e => setCaptchaInput(e.target.value)} onKeyDown={e => handleKeyDown(e, handleRegister)} maxLength={6} />
+              {captchaImage && (
+                <img className="captcha-img" src={captchaImage} alt="验证码" onClick={fetchCaptcha} title="点击刷新验证码" />
+              )}
+            </div>
             <button className="auth-btn" onClick={handleRegister} disabled={loading || !agreed}>{loading ? '注册中...' : '加入星空'}</button>
           </div>
         </div>

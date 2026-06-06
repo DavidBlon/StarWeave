@@ -31,6 +31,7 @@
 
 ## 技术栈
 - 前端：React 18 + Vite + Canvas 2D 粒子系统 + WebSocket（迁移自原型单文件 HTML）
+- Android：Kotlin + Jetpack（原生客户端）
 - 后端：Spring Boot 3.4 + MyBatis + MySQL 8.4
 - 特效：Canvas 2D 粒子系统 + requestAnimationFrame（纯前端模拟星空，无外部数据依赖）
 - 音频：HTML5 Audio（背景音乐循环播放）
@@ -43,6 +44,10 @@
 StarWeave/
 ├── sql/                        # 数据库建表脚本
 │   └── 000-init-schema.sql
+├── android/                    # Android 原生客户端
+│   ├── app/
+│   ├── build.gradle.kts
+│   └── settings.gradle.kts
 ├── backend/                    # Spring Boot 后端
 │   ├── pom.xml
 │   └── src/main/
@@ -82,6 +87,7 @@ StarWeave/
 | POST | /api/user/login | 匿名登录/注册 |
 | POST | /api/user/register | 账号注册 |
 | POST | /api/user/login-password | 账号密码登录 |
+| GET | /api/captcha | 获取图形验证码 |
 | GET | /api/user/{id} | 用户信息 |
 | GET | /api/message/floating | 漂流中的流星列表 |
 | POST | /api/message/publish | 发布流星（自动 AI 审核） |
@@ -174,6 +180,7 @@ sudo nginx -s reload
 - 星空背景：纯 Canvas 2D 模拟地球视角星空（800 颗随机星星 + 12 颗一等星 + 星座连线 + 流星效果），移除 Three.js 依赖
 - 2025-06：Nginx 部署配置完成
 - 移动端适配：浏览器底部工具栏遮挡修复（`100vh` → JS 动态 `--vh` CSS 变量），解决底部导航按钮不可见问题
+- 图形验证码：注册 / 登录双重人机验证（CaptchaService + CaptchaController），防止恶意刷号
 - 2026-06：前端 UI/UX 全面优化
   - 设计令牌系统：CSS 变量统一颜色/圆角/间距
   - 页面切换动画：入场/退出动画（pageIn/pageOut）
@@ -185,3 +192,4 @@ sudo nginx -s reload
   - Token 校验：启动时验证登录态有效性
   - 星图导出升级：支持 2K 分辨率（2400×1800）高清 PNG
   - 后台管理优化：按 Tab 按需加载数据，提升性能
+- 2026-06：Android 原生客户端项目初始化

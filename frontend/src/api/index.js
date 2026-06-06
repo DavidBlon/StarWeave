@@ -5,15 +5,19 @@ const api = axios.create({
   timeout: 10000,
 });
 
+// ========== 验证码 ==========
+export const getCaptcha = () =>
+  api.get('/captcha').then(r => r.data);
+
 // ========== 用户 ==========
 export const loginAnonymous = (nickname) =>
   api.post('/user/login', { nickname }).then(r => r.data);
 
-export const register = (username, nickname, password) =>
-  api.post('/user/register', { username, nickname, password }).then(r => r.data);
+export const register = (username, nickname, password, captchaId, captcha) =>
+  api.post('/user/register', { username, nickname, password, captchaId, captcha }).then(r => r.data);
 
-export const loginWithPassword = (username, password) =>
-  api.post('/user/login/password', { username, password }).then(r => r.data);
+export const loginWithPassword = (username, password, captchaId, captcha) =>
+  api.post('/user/login/password', { username, password, captchaId, captcha }).then(r => r.data);
 
 export const getUser = (id) =>
   api.get(`/user/${id}`).then(r => r.data);

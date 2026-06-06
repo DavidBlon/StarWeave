@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_deep">#FF0A0A1A</color>
+    <color name="bg_deeper">#FF05050F</color>
+    <color name="text_primary">#FFE0E0F0</color>
+    <color name="accent_purple">#FFC9A7FF</color>
+    <color name="accent_cyan">#FF8BE9FD</color>
+    <color name="danger_red">#FFFF6B6B</color>
+    <color name="warning_amber">#FFFFB86C</color>
+</resources>
