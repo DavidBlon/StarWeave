@@ -169,3 +169,13 @@ sudo nginx -s reload
 - `2026-06-06 19:13:21` — 前端 UI/UX 全面优化（设计令牌、骨架屏、自定义弹窗、错误边界、无障碍、登录态持久化）
 - `2026-06-06 19:48:28` — 图形验证码系统 + Android 原生客户端项目初始化
 - `2026-06-06 21:30:00` — 修复 iOS Safari 输入框英文重复输入 bug（组合输入事件兼容）+ 爱发电账号绑定后端
+
+## Auth and logging notes
+
+- Anonymous/nickname login has been removed. Use `POST /api/user/login/password` for login.
+- Registration is `POST /api/user/register`.
+- `username` is the login account: required, max 20 chars, letters and digits only, globally unique.
+- `nickname` is the display name: required, max 20 chars, Chinese characters are allowed, and it is not used for login.
+- Backend logs are centralized in `backend/logs/starweave.log` by default.
+- Log compression is size-based only: archives are created after `starweave.log` reaches 100MB, not every day.
+- Deployment can override the path with `STARWEAVE_LOG_FILE`.

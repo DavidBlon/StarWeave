@@ -217,3 +217,13 @@ sudo nginx -s reload
 <p align="center">
   <sub>⭐ 如果这个项目让你感到温暖，请给个 Star</sub>
 </p>
+
+## Auth and logging notes
+
+- Anonymous/nickname login has been removed. Frontend should use `POST /api/user/login/password` for login.
+- Registration uses `POST /api/user/register`.
+- `username` is the login account: required, max 20 chars, letters and digits only, globally unique.
+- `nickname` is the display name: required, max 20 chars, Chinese characters are allowed, and it is not used for login.
+- Backend logs are centralized under `backend/logs/starweave.log` by default.
+- Log archives are compressed only after `starweave.log` reaches 100MB. Daily auto-compression is disabled.
+- Deployment can override the log path with `STARWEAVE_LOG_FILE`.

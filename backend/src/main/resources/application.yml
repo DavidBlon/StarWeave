@@ -46,7 +46,7 @@ logging:
     com.starweave: INFO
     org.mybatis: WARN
   file:
-    name: logs/starweave.log
+    name: ${STARWEAVE_LOG_FILE:${user.dir}/logs/starweave.log}
   logback:
     rollingpolicy:
       max-file-size: 100MB
