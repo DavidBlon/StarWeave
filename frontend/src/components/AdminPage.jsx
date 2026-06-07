@@ -85,9 +85,9 @@ export default function AdminPage({ user, onShowToast }) {
     setLoading(true);
     const loadFn = {
       pending: loadPending,
-      pendingWishes: loadPendingWishes,
+      pendingWish: loadPendingWishes,
       all: loadAll,
-      allWishes: loadAllWishes,
+      allWish: loadAllWishes,
       users: loadUsers,
     }[tab];
     if (loadFn) {
