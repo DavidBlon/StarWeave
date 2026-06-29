@@ -6,6 +6,8 @@
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4-6db33f)
 ![MySQL](https://img.shields.io/badge/MySQL-8.4-00758f)
 ![Vite](https://img.shields.io/badge/Vite-6-646cff)
+![Android](https://img.shields.io/badge/Android-Kotlin-7f52ff)
+![Canvas](https://img.shields.io/badge/Canvas-2D-f7921e)
 
 ## ✨ 项目特性
 
@@ -16,34 +18,47 @@
 - ✨ **星图治愈特效** — 浮动星尘、星光爆发、治愈语句轮播、呼吸光晕
 - 🎵 **背景音乐** — 右上角旋转唱片图标，点击切换播放 / 暂停
 - 📡 **实时推送** — WebSocket 广播，新流星 / 捞起事件即时通知
-- 🔐 **图形验证码** — 注册 / 登录双重人机验证，防止恶意刷号
-- 🛡️ **内容审核** — 流星 + 回复双重 AI 审核，管理员可审核/删除/管理用户
+- 🔐 **JWT 单设备登录** — 同一账号仅允许一台设备在线，新登录挤掉旧设备
+- 🛡️ **图形验证码** — 注册 / 登录双重人机验证，防止恶意刷号
+- 🔎 **内容审核** — 流星 + 回复双重 AI 审核，管理员可审核/删除/管理用户
 - 📜 **用户协议 & 隐私政策** — 登录注册前必须同意，个人页可随时查看
 - 💖 **星光守护者** — 赞助体系，专属星图边框与荣誉展示
+- 🤖 **AI 回信** — DeepSeek AI 动态生成治愈回复，离线兜底文案
 
 ## 📁 项目结构
 
 ```
 StarWeave/
 ├── sql/                        # 数据库建表脚本
-│   └── 000-init-schema.sql
+│   └── init.sql
 ├── backend/                    # Spring Boot 后端
 │   ├── pom.xml
 │   └── src/main/
 │       ├── java/com/starweave/
-│       │   ├── config/         # CORS, WebSocket 配置
+│       │   ├── config/         # CORS, WebSocket, JWT, Security 配置
 │       │   ├── entity/         # 数据实体
 │       │   ├── mapper/         # MyBatis Mapper 接口
 │       │   ├── service/        # 业务逻辑
 │       │   ├── controller/     # REST API
-│       │   ├── dto/            # 数据传输对象
+│       │   ├── dto/            # 数据传输对象（LoginResult 等）
 │       │   ├── handler/        # 全局异常处理
 │       │   └── websocket/      # WebSocket 推送
 │       └── resources/
 │           ├── application.yml
 │           └── mapper/         # MyBatis XML 映射
-├── android/                    # Android 原生客户端
+├── android/                    # Android 原生客户端（Kotlin + Jetpack）
 │   ├── app/
+│   │   └── src/main/java/com/starweave/android/
+│   │       ├── api/            # Retrofit API 客户端
+│   │       ├── model/          # 数据模型
+│   │       ├── navigation/     # Navigation 路由
+│   │       ├── service/        # 后台服务（音乐播放）
+│   │       ├── ui/
+│   │       │   ├── components/ # UI 组件
+│   │       │   ├── screen/     # 页面（登录/注册/捞流星/星图/管理…）
+│   │       │   └── starmap/    # 星图 Canvas 绘制
+│   │       ├── util/           # 工具类
+│   │       └── viewmodel/      # ViewModel
 │   ├── build.gradle.kts
 │   └── settings.gradle.kts
 ├── frontend/                   # React 18 + Vite 前端
@@ -63,22 +78,24 @@ StarWeave/
 - JDK 17+
 - Node.js 18+
 - MySQL 8.4+
+- Android Studio (可选，构建 Android 客户端)
+
+### 数据库
+
+```bash
+mysql -u root -p < sql/init.sql
+```
+
+编辑 `backend/src/main/resources/application.yml` 中的数据库连接信息。
 
 ### 后端启动
 
 ```bash
-# 1. 创建数据库并执行建表脚本
-mysql -u root -p < sql/000-init-schema.sql
-
-# 2. 修改数据库配置
 cd backend
-# 编辑 src/main/resources/application.yml 中的数据库连接信息
-
-# 3. 启动后端
 ./mvnw spring-boot:run
 ```
 
-后端默认运行在 `http://localhost:8080`
+后端默认运行在 `http://localhost:8080`。
 
 ### 前端启动
 
@@ -88,19 +105,27 @@ npm install
 npm run dev
 ```
 
-前端默认运行在 `http://localhost:5173`
+前端默认运行在 `http://localhost:5173`。
+
+### Android 客户端
+
+使用 Android Studio 打开 `android/` 目录，同步 Gradle 后即可运行。后端地址在 `ApiClient.kt` 中配置。
 
 ## 📡 API 接口
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `POST` | `/api/user/login` | 匿名登录/注册 |
 | `POST` | `/api/user/register` | 账号注册 |
-| `POST` | `/api/user/login-password` | 账号密码登录 |
+| `POST` | `/api/user/login/password` | 账号密码登录 |
 | `GET` | `/api/captcha` | 获取图形验证码 |
 | `GET` | `/api/user/{id}` | 用户信息 |
+| `PUT` | `/api/user/{id}` | 更新用户资料 |
+| `POST` | `/api/user/{id}/password` | 修改密码 |
+| `POST` | `/api/user/{id}/avatar` | 设置头像 |
+| `POST` | `/api/user/{id}/avatar/upload` | 上传头像文件 |
+| `GET` | `/api/user/{id}/stats` | 用户统计数据 |
 | `GET` | `/api/message/floating` | 漂流中的流星列表 |
-| `POST` | `/api/message/publish` | 发布流星（自动审核） |
+| `POST` | `/api/message/publish` | 发布流星（自动 AI 审核） |
 | `POST` | `/api/message/catch` | 捞起流星 |
 | `GET` | `/api/message/user/{uid}` | 用户发布的流星 |
 | `GET` | `/api/message/caught/{uid}` | 用户捞起的流星 |
@@ -117,7 +142,23 @@ npm run dev
 | `DELETE` | `/api/admin/wishes/{id}` | 删除回复 |
 | `GET` | `/api/admin/users` | 用户列表 |
 | `DELETE` | `/api/admin/users/{id}` | 删除用户及所有数据 |
+| `GET` | `/api/admin/stats` | 管理后台统计 |
+| `GET` | `/api/admin/messages` | 全部流星列表 |
 | `WS` | `/ws/meteor` | 实时流星推送 |
+
+### 认证方式
+
+所有需要登录的请求在 HTTP Header 中附加：
+
+```
+Authorization: Bearer <JWT_TOKEN>
+```
+
+登录/注册成功后返回 `LoginResult`，包含 `token`（JWT）、`user`（用户信息）。
+
+### 单设备登录
+
+系统使用 JWT `tokenVersion` 机制实现单设备登录。同一账号在新设备登录后，旧设备的所有 token 自动失效，旧设备的下一次请求会收到 `401` 及提示"账号已在其他设备登录，请重新登录"。
 
 ## 🚢 部署
 
@@ -200,7 +241,7 @@ sudo nginx -s reload
 ## 📄 合规
 
 - ✅ 用户协议 + 隐私政策
-- ✅ 内容审核机制（关键词过滤 + 举报 + 删除）
+- ✅ 内容审核机制（关键词过滤 + AI 审核 + 举报 + 删除）
 - ✅ 未成年人保护
 
 ## 📝 开发日志
@@ -210,20 +251,13 @@ sudo nginx -s reload
 - `2026-06-05 17:45:12` — 修复移动端浏览器底部工具栏遮挡页面内容问题（`100vh` → JS 动态 `--vh` CSS 变量）
 - `2026-06-06 19:13:21` — 前端 UI/UX 全面优化（设计令牌、骨架屏、自定义弹窗、错误边界、无障碍、登录态持久化）
 - `2026-06-06 19:48:28` — 图形验证码系统 + Android 原生客户端项目初始化
-- `2026-06-06 21:30:00` — 修复 iOS Safari 输入框英文重复输入 bug（组合输入事件兼容）+ 爱发电账号绑定后端
+- `2026-06-06 21:30:00` — 修复 iOS Safari 输入框英文重复输入 bug + 爱发电账号绑定后端
+- `2026-06-28 12:00:00` — JWT 单设备登录系统（tokenVersion 机制）+ SecurityConfig + 后台日志集中化
+- `2026-06-28 14:00:00` — DeepSeek AI 动态生成回信 / 治愈文案 + Android 多页面 UI/UX 重构
+- `2026-06-29 10:00:00` — Android 增量加载（IncrementalList）+ 阿里云实名认证基础设施
 
 ---
 
 <p align="center">
   <sub>⭐ 如果这个项目让你感到温暖，请给个 Star</sub>
 </p>
-
-## Auth and logging notes
-
-- Anonymous/nickname login has been removed. Frontend should use `POST /api/user/login/password` for login.
-- Registration uses `POST /api/user/register`.
-- `username` is the login account: required, max 20 chars, letters and digits only, globally unique.
-- `nickname` is the display name: required, max 20 chars, Chinese characters are allowed, and it is not used for login.
-- Backend logs are centralized under `backend/logs/starweave.log` by default.
-- Log archives are compressed only after `starweave.log` reaches 100MB. Daily auto-compression is disabled.
-- Deployment can override the log path with `STARWEAVE_LOG_FILE`.
