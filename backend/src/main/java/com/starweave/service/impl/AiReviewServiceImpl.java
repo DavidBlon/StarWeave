@@ -41,7 +41,7 @@ public class AiReviewServiceImpl implements AiReviewService {
             Pattern.compile("(?i)(http[s]?://|www\\.)[\\w./]+")
     );
 
-    private static final int MAX_CONTENT_LENGTH = 2000;
+    private static final int MAX_CONTENT_LENGTH = 500;
     private static final int MIN_CONTENT_LENGTH = 1;
 
     /** 治愈标签库 */

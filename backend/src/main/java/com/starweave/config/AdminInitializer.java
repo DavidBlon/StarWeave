@@ -5,12 +5,10 @@ import com.starweave.mapper.UserMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 
 /**
  * 应用启动时自动创建超级管理员账号（如果不存在）
@@ -22,6 +20,7 @@ import java.util.HexFormat;
 public class AdminInitializer implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(AdminInitializer.class);
+    private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private final UserMapper userMapper;
 
@@ -37,41 +36,42 @@ public class AdminInitializer implements CommandLineRunner {
             existing = userMapper.findByNickname("admin");
         }
         if (existing != null) {
+            // 确保 isAdmin 标记为 true
+            boolean changed = false;
             if (!Boolean.TRUE.equals(existing.getIsAdmin())) {
                 existing.setIsAdmin(true);
-                userMapper.update(existing);
-                log.debug("✦ 已升级用户 'admin' (id={}) 为管理员", existing.getId());
-            } else {
-                log.debug("管理员账号已存在 (id={})", existing.getId());
+                changed = true;
             }
+            // 迁移旧版 SHA-256 哈希 → BCrypt（旧哈希是 64 位 hex，BCrypt 以 $2 开头）
+            String ph = existing.getPasswordHash();
+            if (ph != null && !ph.startsWith("$2")) {
+                existing.setPasswordHash(passwordEncoder.encode("admin888"));
+                log.info("迁移管理员密码哈希: SHA-256 → BCrypt");
+                changed = true;
+            }
+            if (changed) {
+                userMapper.update(existing);
+            }
+            log.debug("管理员账号已就绪 (id={})", existing.getId());
             return;
         }
 
         User admin = new User();
         admin.setUsername("admin");
-        admin.setNickname("admin");
-        admin.setPasswordHash(hashPassword("admin888"));
+        admin.setNickname("管理员");
+        admin.setPasswordHash(passwordEncoder.encode("admin888"));
         admin.setBio("✦ 星海管理者");
         admin.setBorderStyle("admin");
         admin.setIsSponsor(false);
         admin.setIsAdmin(true);
         admin.setAgreedPolicy(true);
         admin.setAgreedAt(LocalDateTime.now());
+        admin.setTokenVersion(0);
         admin.setAvatarUrl(null);
 
         userMapper.insert(admin);
-        log.debug("✦ 超级管理员账号已创建 (id={})", admin.getId());
-        log.debug("✦ 登录凭据: admin / admin888");
-        log.debug("✦ 登录后底部导航将出现「审核」tab");
-    }
-
-    private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Password hashing failed", e);
-        }
+        log.info("✦ 超级管理员账号已创建 (id={})", admin.getId());
+        log.info("✦ 登录凭据: admin / admin888");
+        log.info("✦ 登录后底部导航将出现「审核」tab");
     }
 }

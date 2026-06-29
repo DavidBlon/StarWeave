@@ -15,7 +15,7 @@ import kotlin.random.Random
 
 /**
  * Full-screen Canvas 2D star background matching the web version.
- * Renders 800 random stars on a celestial sphere + 12 named bright stars
+ * Renders random stars on a celestial sphere + 12 named bright stars
  * + constellation lines + random meteor streaks.
  */
 @Composable
@@ -28,11 +28,14 @@ fun StarFieldCanvas(paused: Boolean = false) {
     var time by remember { mutableFloatStateOf(0f) }
 
     LaunchedEffect(paused) {
+        var lastFrame = 0L
         while (true) {
-            if (!paused) {
-                time += 0.016f // ~60fps
+            withFrameMillis { frameTime ->
+                if (!paused && frameTime - lastFrame >= 33L) {
+                    time += 0.033f
+                    lastFrame = frameTime
+                }
             }
-            withFrameMillis { }
         }
     }
 
@@ -54,7 +57,7 @@ private data class ConstellationStar(
 
 private fun generateStars(): List<Star> {
     val rng = Random(42)
-    return List(800) {
+    return List(360) {
         // Generate on celestial sphere, project to screen
         val theta = rng.nextFloat() * 2f * PI.toFloat()
         val phi = acos(2f * rng.nextFloat() - 1f)

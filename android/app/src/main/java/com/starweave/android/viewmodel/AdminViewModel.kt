@@ -33,17 +33,15 @@ class AdminViewModel : ViewModel() {
 
     fun loadAll(adminId: Long) {
         loadStats(adminId)
-        loadPendingMeteors(adminId)
-        loadPendingWishes(adminId)
     }
 
     fun loadStats(adminId: Long) {
         viewModelScope.launch {
             try {
                 val resp = api.getAdminStats(adminId)
-                if (resp.isSuccess) _state.update { it.copy(stats = resp.data?.mapValues { v -> v.value } ?: emptyMap()) }
+                if (resp.isSuccess) _state.update { it.copy(stats = resp.data?.mapValues { v -> v.value.toInt() } ?: emptyMap()) }
                 val wResp = api.getWishStats(adminId)
-                if (wResp.isSuccess) _state.update { it.copy(wishStats = wResp.data?.mapValues { v -> v.value } ?: emptyMap()) }
+                if (wResp.isSuccess) _state.update { it.copy(wishStats = wResp.data?.mapValues { v -> v.value.toInt() } ?: emptyMap()) }
             } catch (_: Exception) {}
         }
     }

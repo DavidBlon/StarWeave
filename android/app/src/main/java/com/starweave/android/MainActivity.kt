@@ -22,19 +22,26 @@ import com.starweave.android.ui.theme.StarWeaveTheme
 class MainActivity : ComponentActivity() {
     private var musicService: MusicService? = null
     private var bound = false
+    private var musicPlayingState: MutableState<Boolean>? = null
+    private val playbackListener: (Boolean) -> Unit = { playing ->
+        musicPlayingState?.value = playing
+    }
 
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as MusicService.MusicBinder
             musicService = binder.getService()
             bound = true
+            musicService?.addPlaybackListener(playbackListener)
             // Auto-play music
             musicService?.play()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            musicService?.removePlaybackListener(playbackListener)
             musicService = null
             bound = false
+            musicPlayingState?.value = false
         }
     }
 
@@ -62,12 +69,21 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             var musicPlaying by remember { mutableStateOf(false) }
+            DisposableEffect(Unit) {
+                musicPlayingState = object : MutableState<Boolean> {
+                    override var value: Boolean
+                        get() = musicPlaying
+                        set(value) {
+                            musicPlaying = value
+                        }
 
-            // Poll music state periodically
-            LaunchedEffect(Unit) {
-                while (true) {
-                    musicPlaying = musicService?.isPlaying() == true
-                    kotlinx.coroutines.delay(500)
+                    override fun component1(): Boolean = value
+                    override fun component2(): (Boolean) -> Unit = { value = it }
+                }
+                musicService?.addPlaybackListener(playbackListener)
+                onDispose {
+                    musicService?.removePlaybackListener(playbackListener)
+                    musicPlayingState = null
                 }
             }
 
@@ -82,6 +98,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         if (bound) {
+            musicService?.removePlaybackListener(playbackListener)
             unbindService(connection)
             bound = false
         }

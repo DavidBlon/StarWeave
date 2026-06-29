@@ -34,7 +34,7 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
     setMyMeteorsLoading(true);
     getUserMeteors(user.id).then(res => {
       if (res.code === 200) setMyMeteors(res.data || []);
-    }).catch(() => {}).finally(() => setMyMeteorsLoading(false));
+    }).catch(e => { console.error('加载流星列表失败', e); }).finally(() => setMyMeteorsLoading(false));
   }, [user?.id]);
 
   // 治愈回响：3 秒后渐变消失（只响应「有无」，更新内容不重置计时）
@@ -134,7 +134,7 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
               // 刷新我的流星列表
               getUserMeteors(user.id).then(r => {
                 if (r.code === 200) setMyMeteors(r.data || []);
-              }).catch(() => {});
+              }).catch(e => { console.error('刷新流星列表失败', e); });
               // AI 返回后弹出治愈回响（先关 toast，保证不重叠）
               if (res.data && res.data.status === 'approved' && res.data.healingMessage) {
                 if (onHideToast) onHideToast();
@@ -146,7 +146,8 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
                 onShowToast(res.message || '审核通过了，已飞向星空');
               }
             })
-            .catch(() => {
+            .catch(e => {
+              console.error('发射流星失败', e);
               onShowToast('发射失败，请稍后重试');
             })
             .finally(() => {
@@ -174,14 +175,14 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
         <textarea
           placeholder="写下你的烦恼&#10;它会变成一颗流星划过夜空"
           aria-label="写下你的烦恼"
-          maxLength={200}
+          maxLength={500}
           rows={4}
           value={text}
           onChange={e => setText(e.target.value)}
           disabled={gathering}
         />
         <div className="launch-footer">
-          <span className="char-count">{text.length}/200</span>
+          <span className="char-count">{text.length}/500</span>
           <button className="btn-primary" onClick={launch} disabled={gathering || !text.trim()} ref={btnRef}>
             让它飞向星空
           </button>
@@ -196,7 +197,7 @@ export default function LaunchPage({ user, onShowToast, onHideToast, onViewMeteo
           setMyMeteorsLoading(true);
           getUserMeteors(user.id).then(res => {
             if (res.code === 200) setMyMeteors(res.data || []);
-          }).catch(() => {}).finally(() => setMyMeteorsLoading(false));
+          }).catch(e => { console.error('加载我的流星失败', e); }).finally(() => setMyMeteorsLoading(false));
         }
       }}>
         我的流星 ({myMeteors.length})

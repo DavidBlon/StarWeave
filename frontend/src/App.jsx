@@ -13,7 +13,7 @@ import LogoutEffect from './components/LogoutEffect';
 import Toast from './components/Toast';
 import LegalPage from './components/LegalPage';
 import MusicPlayer from './components/MusicPlayer';
-import { getUser } from './api';
+import { getUser, setToken, clearToken, logout as logoutApi } from './api';
 
 export default function App() {
   // 从 localStorage 恢复登录状态
@@ -34,29 +34,62 @@ export default function App() {
   const [viewingMeteorId, setViewingMeteorId] = useState(null);
   const [starPaused, setStarPaused] = useState(false);
   const [showLegalType, setShowLegalType] = useState(null);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const loginEffectPendingRef = useRef(false);
   const logoutEffectPendingRef = useRef(false);
+  // 标记：挂载状态校验是否已完结（用于阻止 mount 时期 stale 401 覆盖后续登录）
+  const mountCheckDoneRef = useRef(false);
+  // 标记：用户是否在当前 App 生命周期内重新登录过
+  const hasFreshLoginRef = useRef(false);
 
   // 登录态校验：恢复登录时验证 token 是否有效
+  // 注意：异步响应可能晚于用户手动登录到达，必须用 ref 保护避免覆盖
   useEffect(() => {
     if (user?.id) {
       getUser(user.id).then(res => {
+        mountCheckDoneRef.current = true;
         if (res.code === 200) {
-          setUser(res.data);
-          localStorage.setItem('starweave_user', JSON.stringify(res.data));
-        } else {
+          if (!hasFreshLoginRef.current) {
+            setUser(res.data);
+            localStorage.setItem('starweave_user', JSON.stringify(res.data));
+          }
+        } else if (!hasFreshLoginRef.current) {
           setUser(null);
           setLoggedIn(false);
           localStorage.removeItem('starweave_user');
         }
-      }).catch(() => {
-        setUser(null);
-        setLoggedIn(false);
-        localStorage.removeItem('starweave_user');
+      }).catch(e => {
+        mountCheckDoneRef.current = true;
+        console.error('验证登录态失败', e);
+        if (!hasFreshLoginRef.current) {
+          setUser(null);
+          setLoggedIn(false);
+          localStorage.removeItem('starweave_user');
+        }
       });
+    } else {
+      mountCheckDoneRef.current = true;
     }
   }, []); // 仅在挂载时执行一次
+
+  // 监听 auth:expired 事件（被踢下线）
+  // 注意：mount 时期的 getUser 401 也会触发此事件，用 mountCheckDoneRef 保护
+  useEffect(() => {
+    const handler = (e) => {
+      // mount 校验未完成时，401 来自旧 session 校验而非真正的踢下线
+      if (!mountCheckDoneRef.current) return;
+      setUser(null);
+      setLoggedIn(false);
+      localStorage.removeItem('starweave_user');
+      clearToken();
+      const msg = e.detail?.message || '账号已在其他设备登录，请重新登录';
+      setErrorMsg(msg);
+      setTimeout(() => setErrorMsg(''), 5000);
+    };
+    window.addEventListener('auth:expired', handler);
+    return () => window.removeEventListener('auth:expired', handler);
+  }, []);
 
   // Toast
   const showToast = useCallback((msg) => {
@@ -73,12 +106,19 @@ export default function App() {
     setActiveTab(name);
   }, []);
 
-  // Login handler
+  // Login handler — userData 可以是 User 对象（旧格式）或 {user, token}（新格式）
   const handleLogin = useCallback((userData) => {
-    setUser(userData);
-    localStorage.setItem('starweave_user', JSON.stringify(userData));
+    // 兼容新旧格式：新格式有 .user 和 .token，旧格式直接是 user
+    const user = userData.user || userData;
+    const token = userData.token;
+    console.log('[Login] userData:', userData, 'user:', user, 'nickname:', user?.nickname);
+    setErrorMsg('');
+    setUser(user);
+    localStorage.setItem('starweave_user', JSON.stringify(user));
+    if (token) setToken(token);
     setShowLoginEffect(true);
     loginEffectPendingRef.current = true;
+    hasFreshLoginRef.current = true;
   }, []);
 
   const handleLoginEffectComplete = useCallback(() => {
@@ -89,6 +129,8 @@ export default function App() {
 
   // Logout handler
   const handleLogout = useCallback(() => {
+    // 先通知服务端使当前 token 失效（fire-and-forget，不阻塞退出动画）
+    logoutApi().catch(e => console.error('退出登录通知失败', e));
     setStarPaused(true);
     setShowLogoutEffect(true);
     logoutEffectPendingRef.current = true;
@@ -98,6 +140,7 @@ export default function App() {
     setLoggedIn(false);
     setUser(null);
     localStorage.removeItem('starweave_user');
+    clearToken();
     setStarPaused(false);
     setShowLogoutEffect(false);
     setActiveTab('launch');
@@ -113,7 +156,7 @@ export default function App() {
           setUser(res.data);
           localStorage.setItem('starweave_user', JSON.stringify(res.data));
         }
-      }).catch(() => {});
+      }).catch(e => { console.error('刷新用户信息失败', e); });
     }
   }, []);
 
@@ -221,6 +264,14 @@ export default function App() {
       <StarField paused={starPaused} />
       <Toast message={toastMsg} visible={toastVisible} onHide={hideToast} />
       <MusicPlayer />
+
+      {/* 红色错误提示（被踢下线等） */}
+      {errorMsg && (
+        <div className="error-toast" role="alert">
+          <span className="error-toast-icon">⚠</span>
+          <span>{errorMsg}</span>
+        </div>
+      )}
 
       <div className="app-container">
         {/* Top Bar — 登录后隐藏 */}

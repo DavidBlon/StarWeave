@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.starweave.android.api.ApiClient
 import com.starweave.android.ui.theme.StarColors
-import java.net.URLEncoder
 
 @Composable
 fun AvatarView(
@@ -55,8 +55,10 @@ fun AvatarView(
         }
         // Uploaded image (avatarUrl is a filename like "avatar_1_xxx.jpg")
         avatarUrl != null && !avatarUrl.startsWith("emoji:") && avatarUrl.isNotEmpty() -> {
+            val baseUrl = ApiClient.BASE_URL.trimEnd('/')
+            val rawUrl = "$baseUrl/user/$userId/avatar/raw?v=${avatarUrl.hashCode()}"
             AsyncImage(
-                model = "http://192.168.110.224:8080/api/user/$userId/avatar/raw",
+                model = rawUrl,
                 contentDescription = "头像",
                 contentScale = ContentScale.Crop,
                 modifier = modifier

@@ -110,7 +110,7 @@ export default function ProfilePage({
       const statsRes = await getUserStats(user.id);
       if (statsRes.code === 200) setStats(statsRes.data);
     } catch (e) {
-      // 静默失败
+      console.error('加载用户统计失败', e);
     }
   }, [user?.id]);
 
@@ -131,7 +131,7 @@ export default function ProfilePage({
       }
       if (res && res.code === 200) setListData(res.data || []);
     } catch (e) {
-      // 静默
+      console.error('加载列表失败', e);
     } finally {
       setListLoading(false);
     }
@@ -321,7 +321,8 @@ export default function ProfilePage({
     }
   }, [user, passwordForm, onShowToast]);
 
-  const nickname = user?.nickname || '匿名旅人';
+  const nickname = (user?.nickname || '').trim() || '匿名旅人';
+  console.log('[ProfilePage] user:', user, 'nickname:', nickname);
   const bioText = user?.bio || '在星河中漂流，捡拾别人的故事';
 
   return (

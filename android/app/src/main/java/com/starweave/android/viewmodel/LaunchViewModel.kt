@@ -9,6 +9,9 @@ import kotlinx.coroutines.launch
 
 data class LaunchState(
     val myMeteors: List<Message> = emptyList(),
+    val isLoadingMyMeteors: Boolean = false,
+    val hasLoadedMyMeteors: Boolean = false,
+    val myMeteorsUserId: Long? = null,
     val isPublishing: Boolean = false,
     val publishedMeteor: Message? = null,
     val showHealingEcho: Boolean = false,
@@ -24,12 +27,37 @@ class LaunchViewModel : ViewModel() {
 
     fun loadMyMeteors(userId: Long) {
         viewModelScope.launch {
+            _state.update { it.copy(isLoadingMyMeteors = true, myMeteorsUserId = userId) }
             try {
                 val resp = api.getUserMeteors(userId)
                 if (resp.isSuccess) {
-                    _state.update { it.copy(myMeteors = resp.data ?: emptyList()) }
+                    _state.update {
+                        it.copy(
+                            myMeteors = resp.data ?: emptyList(),
+                            isLoadingMyMeteors = false,
+                            hasLoadedMyMeteors = true,
+                            myMeteorsUserId = userId
+                        )
+                    }
+                } else {
+                    _state.update {
+                        it.copy(
+                            isLoadingMyMeteors = false,
+                            hasLoadedMyMeteors = true,
+                            myMeteorsUserId = userId,
+                            error = resp.message
+                        )
+                    }
                 }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoadingMyMeteors = false,
+                        hasLoadedMyMeteors = true,
+                        myMeteorsUserId = userId
+                    )
+                }
+            }
         }
     }
 

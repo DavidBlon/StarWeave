@@ -9,6 +9,9 @@ import java.util.List;
 @Mapper
 public interface MessageMapper {
 
+    /** ID 范围，用于优化随机查询 */
+    record IdRange(long minId, long maxId) {}
+
     Message findById(@Param("id") Long id);
 
     /** 批量查询流星 */
@@ -17,11 +20,11 @@ public interface MessageMapper {
     /** 获取已审核通过、未被捞起的流星（按时间降序） */
     List<Message> findFloating(@Param("limit") int limit);
 
-    /** 随机捞取一颗已审核的流星（排除 excludeUserId 的流星） */
-    Message findRandomApproved(@Param("offset") int offset, @Param("excludeUserId") Long excludeUserId);
+    /** 随机捞取一颗已审核的流星（排除 excludeUserId 的流星），ID 范围法避免 OFFSET */
+    Message findRandomApproved(@Param("startId") long startId, @Param("excludeUserId") Long excludeUserId);
 
-    /** 已审核通过且未被捞起的流星总数（排除 excludeUserId 的流星） */
-    long countApproved(@Param("excludeUserId") Long excludeUserId);
+    /** 已审核通过且未被捞起的流星的 ID 范围 */
+    IdRange findApprovedIdRange(@Param("excludeUserId") Long excludeUserId);
 
     /** 获取用户发布的流星 */
     List<Message> findByUserId(@Param("userId") Long userId);

@@ -85,26 +85,17 @@ public class MeteorController {
             return ApiResponse.badRequest("无效的用户ID");
         }
 
-        Message message = messageService.findById(id);
-        if (message == null) {
-            return ApiResponse.notFound("流星不存在");
+        try {
+            boolean ok = messageService.catchMeteor(id, userId);
+            if (!ok) {
+                return ApiResponse.badRequest("流星已被他人捞走");
+            }
+            // 重新从数据库获取最新的流星状态
+            Message message = messageService.findById(id);
+            return ApiResponse.success("你捞起了一颗流星", message);
+        } catch (RuntimeException e) {
+            return ApiResponse.badRequest(e.getMessage());
         }
-        if (message.getIsCaught()) {
-            return ApiResponse.badRequest("这颗流星已经被捞走了");
-        }
-        if (message.getUserId().equals(userId)) {
-            return ApiResponse.badRequest("不能捞起自己的流星");
-        }
-
-        boolean ok = messageService.catchMeteor(id, userId);
-        if (!ok) {
-            return ApiResponse.badRequest("流星已被他人捞走");
-        }
-
-        message.setIsCaught(true);
-        message.setCaughtBy(userId);
-
-        return ApiResponse.success("你捞起了一颗流星", message);
     }
 
     /**

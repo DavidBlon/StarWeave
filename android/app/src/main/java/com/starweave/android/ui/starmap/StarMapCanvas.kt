@@ -8,8 +8,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.platform.LocalContext
 import com.starweave.android.util.HashUtil
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.*
 import kotlin.random.Random
 
@@ -20,8 +21,7 @@ import kotlin.random.Random
 @Composable
 fun StarMapCanvas(
     text: String,
-    modifier: Modifier = Modifier,
-    onBitmapReady: ((Bitmap) -> Unit)? = null
+    modifier: Modifier = Modifier
 ) {
     if (text.isEmpty()) return
 
@@ -31,25 +31,29 @@ fun StarMapCanvas(
 
     var time by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) {
+        var lastFrame = 0L
         while (true) {
-            withFrameMillis { }
-            time += 0.016f
+            withFrameMillis { frameTime ->
+                if (frameTime - lastFrame >= 33L) {
+                    time += 0.033f
+                    lastFrame = frameTime
+                }
+            }
         }
-    }
-
-    // Generate save bitmap once (static, high-res)
-    LaunchedEffect(mapData) {
-        val w = 1080
-        val h = 1080
-        val saveBmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = android.graphics.Canvas(saveBmp)
-        drawStarMapToBitmap(canvas, mapData, text, 0f, HashUtil.mulberry32(seed), w, h)
-        onBitmapReady?.invoke(saveBmp)
     }
 
     Canvas(modifier = modifier.fillMaxSize()) {
         drawStarMap(mapData, text, time, rng)
     }
+}
+
+suspend fun renderStarMapBitmap(text: String, sizePx: Int = 1080): Bitmap = withContext(Dispatchers.Default) {
+    val seed = HashUtil.hashCode(text)
+    val mapData = computeStarMap(seed)
+    val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = android.graphics.Canvas(bitmap)
+    drawStarMapToBitmap(canvas, mapData, text, 0f, HashUtil.mulberry32(seed), sizePx, sizePx)
+    bitmap
 }
 
 private fun DrawScope.drawStarMap(

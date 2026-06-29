@@ -18,6 +18,7 @@ class PrefsManager(private val context: Context) {
     companion object {
         private val KEY_USER_ID = longPreferencesKey("user_id")
         private val KEY_USER_JSON = stringPreferencesKey("user_json")
+        private val KEY_TOKEN = stringPreferencesKey("jwt_token")
         private val KEY_BASE_URL = stringPreferencesKey("base_url")
     }
 
@@ -36,6 +37,10 @@ class PrefsManager(private val context: Context) {
         json?.let { gson.fromJson(it, User::class.java) }
     }
 
+    val token: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[KEY_TOKEN]
+    }
+
     val baseUrl: Flow<String?> = context.dataStore.data.map { prefs ->
         prefs[KEY_BASE_URL]
     }
@@ -47,10 +52,17 @@ class PrefsManager(private val context: Context) {
         }
     }
 
+    suspend fun saveToken(token: String) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_TOKEN] = token
+        }
+    }
+
     suspend fun clearUser() {
         context.dataStore.edit { prefs ->
             prefs.remove(KEY_USER_ID)
             prefs.remove(KEY_USER_JSON)
+            prefs.remove(KEY_TOKEN)
         }
     }
 

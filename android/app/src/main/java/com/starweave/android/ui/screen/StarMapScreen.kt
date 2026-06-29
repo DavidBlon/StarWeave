@@ -30,8 +30,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.starweave.android.ui.starmap.StarMapCanvas
+import com.starweave.android.ui.starmap.renderStarMapBitmap
 import com.starweave.android.ui.theme.StarColors
 import com.starweave.android.viewmodel.StarMapState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -134,8 +138,9 @@ fun StarMapScreen(
         // Star map canvas with breathing glow border
         if (state.displayText.isNotEmpty()) {
             val context = LocalContext.current
-            var savedBitmap by remember { mutableStateOf<Bitmap?>(null) }
             var savedMessage by remember { mutableStateOf<String?>(null) }
+            var isSaving by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
 
             Box(
                 modifier = Modifier
@@ -153,8 +158,7 @@ fun StarMapScreen(
             ) {
                 StarMapCanvas(
                     text = state.displayText,
-                    modifier = Modifier.fillMaxSize(),
-                    onBitmapReady = { savedBitmap = it }
+                    modifier = Modifier.fillMaxSize()
                 )
 
                 // Dust particles overlay
@@ -171,12 +175,18 @@ fun StarMapScreen(
                         RoundedCornerShape(50.dp)
                     )
                     .clickable {
-                        val bmp = savedBitmap
-                        if (bmp != null) {
-                            val saved = saveBitmapToGallery(context, bmp, "StarWeave_${System.currentTimeMillis()}")
-                            savedMessage = if (saved) "已保存到相册 ✦" else "保存失败"
-                        } else {
-                            savedMessage = "星图渲染中，请稍候..."
+                        if (!isSaving) {
+                            isSaving = true
+                            savedMessage = "正在生成星图..."
+                            scope.launch {
+                                val bmp = renderStarMapBitmap(state.displayText)
+                                val saved = withContext(Dispatchers.IO) {
+                                    saveBitmapToGallery(context, bmp, "StarWeave_${System.currentTimeMillis()}")
+                                }
+                                bmp.recycle()
+                                savedMessage = if (saved) "已保存到相册 ✦" else "保存失败"
+                                isSaving = false
+                            }
                         }
                     }
                     .padding(horizontal = 24.dp, vertical = 10.dp),
@@ -185,7 +195,7 @@ fun StarMapScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.Download, contentDescription = null, tint = StarColors.BgDeep, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("保存星图", color = StarColors.BgDeep, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+                    Text(if (isSaving) "生成中..." else "保存星图", color = StarColors.BgDeep, fontSize = 13.sp, fontWeight = FontWeight.Medium)
                 }
             }
 
@@ -230,7 +240,15 @@ private fun DustParticlesOverlay(modifier: Modifier = Modifier) {
     }
     var time by remember { mutableFloatStateOf(0f) }
     LaunchedEffect(Unit) {
-        while (true) { withFrameMillis { }; time += 0.016f }
+        var lastFrame = 0L
+        while (true) {
+            withFrameMillis { frameTime ->
+                if (frameTime - lastFrame >= 33L) {
+                    time += 0.033f
+                    lastFrame = frameTime
+                }
+            }
+        }
     }
 
     Canvas(modifier = modifier) {

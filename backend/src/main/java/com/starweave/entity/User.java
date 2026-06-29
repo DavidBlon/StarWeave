@@ -13,6 +13,7 @@ public class User {
     private String borderStyle;
     private Boolean isSponsor;
     private Boolean isAdmin;
+    private Integer tokenVersion = 0;
     private Boolean agreedPolicy;
     private LocalDateTime agreedAt;
     private LocalDateTime createdAt;
@@ -45,6 +46,9 @@ public class User {
 
     public Boolean getIsAdmin() { return isAdmin; }
     public void setIsAdmin(Boolean isAdmin) { this.isAdmin = isAdmin; }
+
+    public Integer getTokenVersion() { return tokenVersion; }
+    public void setTokenVersion(Integer tokenVersion) { this.tokenVersion = tokenVersion; }
 
     public Boolean getAgreedPolicy() { return agreedPolicy; }
     public void setAgreedPolicy(Boolean agreedPolicy) { this.agreedPolicy = agreedPolicy; }

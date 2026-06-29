@@ -5,6 +5,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.starweave.android.model.User
 import com.starweave.android.ui.components.AvatarView
 import com.starweave.android.ui.components.MeteorCard
+import com.starweave.android.ui.components.rememberIncrementalListState
 import com.starweave.android.ui.theme.StarColors
 import com.starweave.android.viewmodel.ProfileState
 
@@ -248,6 +251,16 @@ private fun StatOverlay(
     wishes: List<Map<String, Any>> = emptyList(),
     onClose: () -> Unit, onViewMeteor: (Long) -> Unit = {}
 ) {
+    val totalCount = when {
+        wishes.isNotEmpty() -> wishes.size
+        else -> caughtMeteors.size + publishedMeteors.size
+    }
+    val incrementalState = rememberIncrementalListState(
+        totalCount = totalCount,
+        initialCount = 20,
+        pageSize = 20
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -268,9 +281,23 @@ private fun StatOverlay(
                     CircularProgressIndicator(color = StarColors.AccentCyan, strokeWidth = 2.dp)
                 }
             } else if (wishes.isNotEmpty()) {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    wishes.forEach { w ->
-                        WishCard(wish = w, modifier = Modifier.padding(vertical = 4.dp))
+                LazyColumn(
+                    state = incrementalState.listState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(wishes.take(incrementalState.visibleCount), key = { it["id"]?.toString() ?: it.hashCode().toString() }) { w ->
+                        WishCard(wish = w)
+                    }
+                    if (incrementalState.hasMore) {
+                        item {
+                            Text(
+                                "继续下滑加载更多",
+                                color = StarColors.TextTertiary,
+                                fontSize = 11.sp,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = TextAlign.Center
+                            )
+                        }
                     }
                 }
             } else {
@@ -280,9 +307,23 @@ private fun StatOverlay(
                         Text("暂无数据", color = StarColors.TextTertiary, fontSize = 13.sp)
                     }
                 } else {
-                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        meteors.forEach { m ->
-                            MeteorCard(meteor = m, modifier = Modifier.padding(vertical = 4.dp).clickable { onViewMeteor(m.id) })
+                    LazyColumn(
+                        state = incrementalState.listState,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(meteors.take(incrementalState.visibleCount), key = { it.id }) { m ->
+                            MeteorCard(meteor = m, modifier = Modifier.clickable { onViewMeteor(m.id) })
+                        }
+                        if (incrementalState.hasMore) {
+                            item {
+                                Text(
+                                    "继续下滑加载更多",
+                                    color = StarColors.TextTertiary,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
                         }
                     }
                 }

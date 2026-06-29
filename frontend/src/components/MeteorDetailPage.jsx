@@ -31,7 +31,8 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
     ]).then(([meteorRes, wishesRes]) => {
       if (meteorRes.code === 200) setMeteor(meteorRes.data);
       if (wishesRes.code === 200) setWishes(wishesRes.data || []);
-    }).catch(() => {
+    }).catch(e => {
+      console.error('加载流星详情失败', e);
       if (onShowToast) onShowToast('加载失败');
     }).finally(() => setLoading(false));
   }, [meteorId, onShowToast]);
@@ -60,6 +61,7 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
           }
         } catch (e) {
           if (onShowToast) onShowToast('删除失败');
+          console.error('删除失败', e);
         } finally {
           setDeleting(false);
         }
@@ -84,7 +86,8 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
           } else {
             if (onShowToast) onShowToast(res.message || '删除失败');
           }
-        } catch (_) {
+        } catch (e) {
+          console.error('删除回复失败', e);
           if (onShowToast) onShowToast('删除失败');
         } finally {
           setDeletingWishId(null);
@@ -102,7 +105,8 @@ export default function MeteorDetailPage({ meteorId, user, onBack, onShowToast, 
       setReplyText('');
       if (onShowToast) onShowToast('回复已送达流星');
       loadData(); // 刷新回复列表
-    } catch (_) {
+    } catch (e) {
+      console.error('发送回复失败', e);
       if (onShowToast) onShowToast('发送失败，请重试');
     } finally {
       setSendingReply(false);

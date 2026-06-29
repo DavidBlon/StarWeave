@@ -4,11 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
@@ -25,6 +25,7 @@ import com.starweave.android.api.ApiClient
 import com.starweave.android.model.Message
 import com.starweave.android.model.Wish
 import com.starweave.android.ui.components.MeteorCard
+import com.starweave.android.ui.components.rememberIncrementalListState
 import com.starweave.android.ui.theme.StarColors
 import kotlinx.coroutines.launch
 
@@ -44,6 +45,11 @@ fun MeteorDetailScreen(
     var isSending by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var toastMsg by remember { mutableStateOf<String?>(null) }
+    val wishesListState = rememberIncrementalListState(
+        totalCount = wishes.size,
+        initialCount = 20,
+        pageSize = 20
+    )
 
     fun loadMeteor() {
         scope.launch {
@@ -108,13 +114,17 @@ fun MeteorDetailScreen(
                 Text("流星不存在或已消失", color = StarColors.TextTertiary)
             }
         } else {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            LazyColumn(
+                state = wishesListState.listState,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                item {
                 MeteorCard(meteor = meteor!!, showStatus = true)
-
-                Spacer(modifier = Modifier.height(16.dp))
+                }
 
                 // Metadata
-                meteor!!.let { m ->
+                item {
+                    val m = meteor!!
                     Column(
                         modifier = Modifier.fillMaxWidth()
                             .background(StarColors.BgCard, RoundedCornerShape(14.dp))
@@ -131,21 +141,21 @@ fun MeteorDetailScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // Wishes
-                Text("心愿与回复", color = StarColors.TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Light)
-                Spacer(modifier = Modifier.height(8.dp))
+                item {
+                    Text("心愿与回复", color = StarColors.TextSecondary, fontSize = 14.sp, fontWeight = FontWeight.Light)
+                }
 
                 if (wishes.isEmpty()) {
+                    item {
                     Text("还没有人留下心愿 ✦", color = StarColors.TextTertiary, fontSize = 12.sp,
                         modifier = Modifier.padding(vertical = 20.dp).fillMaxWidth(), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                    }
                 } else {
-                    wishes.forEach { wish ->
+                    items(wishes.take(wishesListState.visibleCount), key = { it.id }) { wish ->
                         var wishDeleteConfirm by remember { mutableStateOf(false) }
                         Column(
                             modifier = Modifier.fillMaxWidth()
-                                .padding(vertical = 4.dp)
                                 .background(Color(0x05FFFFFF), RoundedCornerShape(12.dp))
                                 .padding(10.dp)
                         ) {
@@ -183,12 +193,22 @@ fun MeteorDetailScreen(
                             }
                         }
                     }
+                    if (wishesListState.hasMore) {
+                        item {
+                            Text(
+                                "继续下滑加载更多",
+                                color = StarColors.TextTertiary,
+                                fontSize = 11.sp,
+                                modifier = Modifier.fillMaxWidth(),
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
+                    }
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
-
                 // Reply input
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                item {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     OutlinedTextField(
                         value = replyText,
                         onValueChange = { if (it.length <= 100) replyText = it },
@@ -246,8 +266,7 @@ fun MeteorDetailScreen(
                             tint = if (replyText.isNotBlank()) StarColors.AccentCyan else StarColors.TextTertiary)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(20.dp))
+                }
             }
         }
     }

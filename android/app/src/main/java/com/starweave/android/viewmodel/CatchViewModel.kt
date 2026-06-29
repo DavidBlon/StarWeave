@@ -12,6 +12,9 @@ data class CatchState(
     val currentMeteor: Message? = null,
     val wishes: List<Wish> = emptyList(),
     val catchHistory: List<Message> = emptyList(),
+    val isLoadingHistory: Boolean = false,
+    val hasLoadedHistory: Boolean = false,
+    val historyUserId: Long? = null,
     val isLoading: Boolean = false,
     val isCatching: Boolean = false,
     val isSendingWish: Boolean = false,
@@ -98,12 +101,37 @@ class CatchViewModel : ViewModel() {
 
     fun loadCatchHistory(userId: Long) {
         viewModelScope.launch {
+            _state.update { it.copy(isLoadingHistory = true, historyUserId = userId) }
             try {
                 val resp = api.getCaughtMeteors(userId)
                 if (resp.isSuccess) {
-                    _state.update { it.copy(catchHistory = resp.data ?: emptyList()) }
+                    _state.update {
+                        it.copy(
+                            catchHistory = resp.data ?: emptyList(),
+                            isLoadingHistory = false,
+                            hasLoadedHistory = true,
+                            historyUserId = userId
+                        )
+                    }
+                } else {
+                    _state.update {
+                        it.copy(
+                            isLoadingHistory = false,
+                            hasLoadedHistory = true,
+                            historyUserId = userId,
+                            error = resp.message
+                        )
+                    }
                 }
-            } catch (_: Exception) {}
+            } catch (_: Exception) {
+                _state.update {
+                    it.copy(
+                        isLoadingHistory = false,
+                        hasLoadedHistory = true,
+                        historyUserId = userId
+                    )
+                }
+            }
         }
     }
 

@@ -1,6 +1,10 @@
 server:
   port: 8080
 
+# CORS 允许的来源（逗号分隔，* = 开发模式不发送 credentials）
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:*}
+
 spring:
   servlet:
     multipart:
@@ -30,15 +34,30 @@ mybatis:
 
 # DeepSeek AI 审核配置
 deepseek:
-  api-key: sk-3ad9a4e37c0a49528294c4f242850c5b
+  api-key: ${DEEPSEEK_API_KEY:sk-placeholder-replace-in-production}
   api-url: https://api.deepseek.com/v1/chat/completions
-  model: deepseek-v4-flash
+  model: deepseek-chat
+
+# JWT 认证
+jwt:
+  secret: ${JWT_SECRET:starweave-default-jwt-secret-key-minimum-256-bits-long-change-in-production}
+  expiration: 604800000  # 7 天（毫秒）
 
 afdian:
   oauth:
     client-id: ${AFDIAN_CLIENT_ID:}
     client-secret: ${AFDIAN_CLIENT_SECRET:}
     redirect-uri: ${AFDIAN_REDIRECT_URI:}
+
+aliyun:
+  cloudauth:
+    enabled: ${ALIYUN_CLOUDAUTH_ENABLED:false}
+    access-key-id: ${ALIYUN_CLOUDAUTH_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIYUN_CLOUDAUTH_ACCESS_KEY_SECRET:}
+    endpoint: ${ALIYUN_CLOUDAUTH_ENDPOINT:cloudauth.aliyuncs.com}
+    param-type: ${ALIYUN_CLOUDAUTH_PARAM_TYPE:normal}
+    connect-timeout-ms: ${ALIYUN_CLOUDAUTH_CONNECT_TIMEOUT_MS:5000}
+    read-timeout-ms: ${ALIYUN_CLOUDAUTH_READ_TIMEOUT_MS:10000}
 
 logging:
   level:

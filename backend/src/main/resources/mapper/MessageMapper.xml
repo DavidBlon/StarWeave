@@ -51,13 +51,14 @@
 
     <select id="findRandomApproved" resultMap="BaseMap">
         SELECT * FROM message
-        WHERE status = 'approved' AND is_caught = 0
+        WHERE id >= #{startId} AND status = 'approved' AND is_caught = 0
         <if test="excludeUserId != null">AND user_id != #{excludeUserId}</if>
-        ORDER BY id LIMIT 1 OFFSET #{offset}
+        ORDER BY id LIMIT 1
     </select>
 
-    <select id="countApproved" resultType="long">
-        SELECT COUNT(*) FROM message WHERE status = 'approved' AND is_caught = 0
+    <select id="findApprovedIdRange" resultType="com.starweave.mapper.MessageMapper$IdRange">
+        SELECT MIN(id) AS minId, MAX(id) AS maxId
+        FROM message WHERE status = 'approved' AND is_caught = 0
         <if test="excludeUserId != null">AND user_id != #{excludeUserId}</if>
     </select>
 

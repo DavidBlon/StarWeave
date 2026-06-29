@@ -1,5 +1,9 @@
 package com.starweave.android.navigation
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.starweave.android.api.ApiClient
 import com.starweave.android.ui.components.*
@@ -32,6 +37,7 @@ import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.ByteArrayOutputStream
 
 @Composable
 fun AppNavigation(
@@ -44,12 +50,7 @@ fun AppNavigation(
     musicPlaying: Boolean = false,
     onToggleMusic: () -> Unit = {}
 ) {
-    val authState by authVm.state.collectAsState()
-    val launchState by launchVm.state.collectAsState()
-    val catchState by catchVm.state.collectAsState()
-    val starMapState by starMapVm.state.collectAsState()
-    val profileState by profileVm.state.collectAsState()
-    val adminState by adminVm.state.collectAsState()
+    val authState by authVm.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     var activeTab by remember { mutableStateOf("launch") }
@@ -60,16 +61,26 @@ fun AppNavigation(
     var toastMessage by remember { mutableStateOf<String?>(null) }
 
     Box(modifier = Modifier.fillMaxSize().background(StarColors.BgDeep)) {
-        // Background stars (always rendered)
-        StarFieldCanvas(paused = starPaused)
+        val shouldPauseStars = starPaused ||
+            activeTab == "admin" ||
+            showLegalType != null ||
+            showAvatarPicker ||
+            authState.showLoginEffect ||
+            authState.showLogoutEffect
+
+        // Background stars (always rendered, but throttled/paused on dense overlays)
+        StarFieldCanvas(paused = shouldPauseStars)
 
         if (!authState.isLoggedIn) {
             // Auth screen
             AuthScreen(
                 isLoading = authState.isLoading,
                 error = authState.error,
-                onLogin = { u, p -> authVm.login(u, p) },
-                onRegister = { u, n, p -> authVm.register(u, n, p) },
+                captchaImage = authState.captcha?.image,
+                captchaLoading = authState.captchaLoading,
+                onRefreshCaptcha = { authVm.refreshCaptcha() },
+                onLogin = { u, p, c -> authVm.login(u, p, c) },
+                onRegister = { u, n, p, c -> authVm.register(u, n, p, c) },
                 onShowLegal = { showLegalType = it },
                 onClearError = { authVm.clearError() }
             )
@@ -108,6 +119,12 @@ fun AppNavigation(
                             "launch" -> {
                                 val user = authState.user
                                 if (user != null) {
+                                    val launchState by launchVm.state.collectAsStateWithLifecycle()
+                                    LaunchedEffect(launchState.toastMessage) {
+                                        if (launchState.toastMessage != null) {
+                                            toastMessage = launchState.toastMessage
+                                        }
+                                    }
                                     LaunchScreen(
                                         state = launchState,
                                         userId = user.id,
@@ -122,6 +139,12 @@ fun AppNavigation(
                             "catch" -> {
                                 val user = authState.user
                                 if (user != null) {
+                                    val catchState by catchVm.state.collectAsStateWithLifecycle()
+                                    LaunchedEffect(catchState.toastMessage) {
+                                        if (catchState.toastMessage != null) {
+                                            toastMessage = catchState.toastMessage
+                                        }
+                                    }
                                     CatchScreen(
                                         state = catchState,
                                         userId = user.id,
@@ -135,6 +158,7 @@ fun AppNavigation(
                                 }
                             }
                             "starmap" -> {
+                                val starMapState by starMapVm.state.collectAsStateWithLifecycle()
                                 StarMapScreen(
                                     state = starMapState,
                                     onInputChange = { starMapVm.updateInput(it) },
@@ -147,6 +171,12 @@ fun AppNavigation(
                             "profile" -> {
                                 val user = authState.user
                                 if (user != null) {
+                                    val profileState by profileVm.state.collectAsStateWithLifecycle()
+                                    LaunchedEffect(profileState.toastMessage) {
+                                        if (profileState.toastMessage != null) {
+                                            toastMessage = profileState.toastMessage
+                                        }
+                                    }
                                     ProfileScreen(
                                         user = user,
                                         state = profileState,
@@ -173,6 +203,12 @@ fun AppNavigation(
                             "admin" -> {
                                 val user = authState.user
                                 if (user != null && user.isAdmin) {
+                                    val adminState by adminVm.state.collectAsStateWithLifecycle()
+                                    LaunchedEffect(adminState.toastMessage) {
+                                        if (adminState.toastMessage != null) {
+                                            toastMessage = adminState.toastMessage
+                                        }
+                                    }
                                     AdminScreen(
                                         state = adminState,
                                         adminId = user.id,
@@ -267,12 +303,9 @@ fun AppNavigation(
                             CoroutineScope(Dispatchers.IO).launch {
                                 try {
                                     val uri = selection.imageUri
-                                    val inputStream = context.contentResolver.openInputStream(uri)
-                                    if (inputStream != null) {
-                                        val bytes = inputStream.readBytes()
-                                        inputStream.close()
-                                        val mimeType = context.contentResolver.getType(uri) ?: "image/jpeg"
-                                        val requestBody = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+                                    val bytes = compressAvatarImage(context, uri)
+                                    if (bytes != null) {
+                                        val requestBody = bytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
                                         val part = MultipartBody.Part.createFormData("file", "avatar.jpg", requestBody)
                                         val resp = ApiClient.getService().uploadAvatar(user.id, part)
                                         if (resp.isSuccess && resp.data != null) {
@@ -290,9 +323,7 @@ fun AppNavigation(
         }
 
         // Toast
-        val currentToast = toastMessage ?: launchState.toastMessage ?: catchState.toastMessage
-        ?: profileState.toastMessage ?: adminState.toastMessage
-        currentToast?.let { msg ->
+        toastMessage?.let { msg ->
             StarToast(message = msg, visible = true, onDismiss = {
                 toastMessage = null
                 launchVm.clearToast()
@@ -301,5 +332,50 @@ fun AppNavigation(
                 adminVm.clearToast()
             })
         }
+    }
+}
+
+private fun compressAvatarImage(context: Context, uri: Uri): ByteArray? {
+    return try {
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            BitmapFactory.decodeStream(input, null, bounds)
+        }
+        val maxSide = 512
+        var sampleSize = 1
+        while (bounds.outWidth / sampleSize > maxSide || bounds.outHeight / sampleSize > maxSide) {
+            sampleSize *= 2
+        }
+
+        val options = BitmapFactory.Options().apply { inSampleSize = sampleSize }
+        val decoded = context.contentResolver.openInputStream(uri)?.use { input ->
+            BitmapFactory.decodeStream(input, null, options)
+        } ?: return null
+
+        val scale = minOf(
+            maxSide.toFloat() / decoded.width.toFloat(),
+            maxSide.toFloat() / decoded.height.toFloat(),
+            1f
+        )
+        val outputBitmap = if (scale < 1f) {
+            Bitmap.createScaledBitmap(
+                decoded,
+                (decoded.width * scale).toInt().coerceAtLeast(1),
+                (decoded.height * scale).toInt().coerceAtLeast(1),
+                true
+            )
+        } else {
+            decoded
+        }
+
+        ByteArrayOutputStream().use { out ->
+            outputBitmap.compress(Bitmap.CompressFormat.JPEG, 85, out)
+            out.toByteArray()
+        }.also {
+            if (outputBitmap !== decoded) outputBitmap.recycle()
+            decoded.recycle()
+        }
+    } catch (_: Exception) {
+        null
     }
 }

@@ -13,6 +13,7 @@
         <result column="border_style" property="borderStyle"/>
         <result column="is_sponsor" property="isSponsor"/>
         <result column="is_admin" property="isAdmin"/>
+        <result column="token_version" property="tokenVersion"/>
         <result column="agreed_policy" property="agreedPolicy"/>
         <result column="agreed_at" property="agreedAt"/>
         <result column="created_at" property="createdAt"/>
@@ -36,14 +37,15 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO `user` (username, nickname, avatar_url, password_hash, bio, border_style, is_sponsor, is_admin, agreed_policy, agreed_at)
-        VALUES (#{username}, #{nickname}, #{avatarUrl}, #{passwordHash}, #{bio}, #{borderStyle}, #{isSponsor}, #{isAdmin}, #{agreedPolicy}, #{agreedAt})
+        INSERT INTO `user` (username, nickname, avatar_url, password_hash, bio, border_style, is_sponsor, is_admin, token_version, agreed_policy, agreed_at)
+        VALUES (#{username}, #{nickname}, #{avatarUrl}, #{passwordHash}, #{bio}, #{borderStyle}, #{isSponsor}, #{isAdmin}, #{tokenVersion}, #{agreedPolicy}, #{agreedAt})
     </insert>
 
     <update id="update">
         UPDATE `user`
         <set>
             <if test="nickname != null">nickname = #{nickname},</if>
+            <if test="tokenVersion != null">token_version = #{tokenVersion},</if>
             <if test="avatarUrl != null">avatar_url = #{avatarUrl},</if>
             <if test="passwordHash != null">password_hash = #{passwordHash},</if>
             <if test="bio != null">bio = #{bio},</if>
@@ -58,6 +60,10 @@
 
     <update id="updateBorderStyle">
         UPDATE `user` SET border_style = #{borderStyle} WHERE id = #{id}
+    </update>
+
+    <update id="incrementTokenVersion">
+        UPDATE `user` SET token_version = COALESCE(token_version, 0) + 1 WHERE id = #{id}
     </update>
 
     <update id="setSponsor">

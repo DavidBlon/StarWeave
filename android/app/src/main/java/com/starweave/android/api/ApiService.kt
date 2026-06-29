@@ -6,15 +6,18 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    // ── User ──
-    @POST("user/login")
-    suspend fun loginAnonymous(@Body body: Map<String, String>): ApiResponse<User>
+    @GET("captcha")
+    suspend fun getCaptcha(): ApiResponse<Captcha>
 
+    // ── User ──
     @POST("user/register")
-    suspend fun register(@Body body: Map<String, String>): ApiResponse<User>
+    suspend fun register(@Body body: Map<String, String>): ApiResponse<LoginResult>
+
+    @POST("user/logout")
+    suspend fun logout(): ApiResponse<Unit>
 
     @POST("user/login/password")
-    suspend fun loginWithPassword(@Body body: Map<String, String>): ApiResponse<User>
+    suspend fun loginWithPassword(@Body body: Map<String, String>): ApiResponse<LoginResult>
 
     @GET("user/{id}")
     suspend fun getUser(@Path("id") id: Long): ApiResponse<User>
@@ -49,10 +52,10 @@ interface ApiService {
     suspend fun catchMeteor(@Path("id") id: Long, @Body body: Map<String, String>): ApiResponse<Message>
 
     @POST("meteors/{meteorId}/wish")
-    suspend fun makeWish(@Path("meteorId") meteorId: Long, @Body body: Map<String, String>): ApiResponse<Message>
+    suspend fun makeWish(@Path("meteorId") meteorId: Long, @Body body: Map<String, String>): ApiResponse<Unit>
 
     @HTTP(method = "DELETE", path = "meteors/{id}", hasBody = true)
-    suspend fun deleteMeteor(@Path("id") id: Long, @Body body: Map<String, String>): ApiResponse<Message>
+    suspend fun deleteMeteor(@Path("id") id: Long, @Body body: Map<String, String>): ApiResponse<Unit>
 
     @GET("meteors/{meteorId}/wishes")
     suspend fun getWishes(@Path("meteorId") meteorId: Long): ApiResponse<List<Wish>>
@@ -67,7 +70,7 @@ interface ApiService {
     suspend fun getUserWishes(@Path("userId") userId: Long): ApiResponse<List<Map<String, Any>>>
 
     @HTTP(method = "DELETE", path = "meteors/wishes/{wishId}", hasBody = true)
-    suspend fun deleteWish(@Path("wishId") wishId: Long, @Body body: Map<String, String>): ApiResponse<Message>
+    suspend fun deleteWish(@Path("wishId") wishId: Long, @Body body: Map<String, String>): ApiResponse<Unit>
 
     // ── Star Map ──
     @GET("star-map/{id}")
@@ -98,7 +101,7 @@ interface ApiService {
     ): ApiResponse<Message>
 
     @GET("admin/stats")
-    suspend fun getAdminStats(@Query("adminId") adminId: Long): ApiResponse<Map<String, Int>>
+    suspend fun getAdminStats(@Query("adminId") adminId: Long): ApiResponse<Map<String, Number>>
 
     @GET("admin/messages")
     suspend fun getAllMessages(
@@ -110,7 +113,7 @@ interface ApiService {
     suspend fun deleteMeteorAdmin(
         @Path("messageId") messageId: Long,
         @Query("adminId") adminId: Long
-    ): ApiResponse<Message>
+    ): ApiResponse<Unit>
 
     @GET("admin/wishes/pending")
     suspend fun getPendingWishes(@Query("adminId") adminId: Long): ApiResponse<List<Wish>>
@@ -132,10 +135,10 @@ interface ApiService {
     suspend fun deleteWishAdmin(
         @Path("wishId") wishId: Long,
         @Query("adminId") adminId: Long
-    ): ApiResponse<Message>
+    ): ApiResponse<Unit>
 
     @GET("admin/wishes/stats")
-    suspend fun getWishStats(@Query("adminId") adminId: Long): ApiResponse<Map<String, Int>>
+    suspend fun getWishStats(@Query("adminId") adminId: Long): ApiResponse<Map<String, Number>>
 
     @GET("admin/users")
     suspend fun getAdminUsers(@Query("adminId") adminId: Long): ApiResponse<List<User>>
@@ -144,5 +147,5 @@ interface ApiService {
     suspend fun deleteUserAdmin(
         @Path("userId") userId: Long,
         @Query("adminId") adminId: Long
-    ): ApiResponse<Message>
+    ): ApiResponse<Unit>
 }

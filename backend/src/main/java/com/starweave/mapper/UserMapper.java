@@ -23,6 +23,8 @@ public interface UserMapper {
 
     int updateBorderStyle(@Param("id") Long id, @Param("borderStyle") String borderStyle);
 
+    int incrementTokenVersion(@Param("id") Long id);
+
     int setSponsor(@Param("id") Long id, @Param("isSponsor") Boolean isSponsor);
 
     int deleteById(@Param("id") Long id);

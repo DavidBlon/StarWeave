@@ -14,10 +14,8 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.time.LocalDateTime;
-import java.util.HexFormat;
 import java.util.List;
 
 @Service
@@ -25,6 +23,7 @@ public class UserServiceImpl implements UserService {
 
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     private static final String USERNAME_PATTERN = "^[A-Za-z0-9]+$";
+    private static final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     private final UserMapper userMapper;
     private final MessageMapper messageMapper;
@@ -81,16 +80,17 @@ public class UserServiceImpl implements UserService {
         user.setIsAdmin(false);
         user.setAgreedPolicy(true);
         user.setAgreedAt(LocalDateTime.now());
-        user.setPasswordHash(hashPassword(password));
+        user.setPasswordHash(passwordEncoder.encode(password));
         int avatarSeed = username.hashCode() & 0x7fffffff;
         user.setAvatarUrl("/api/avatar/" + (avatarSeed % 100));
 
         try {
             userMapper.insert(user);
+            userMapper.incrementTokenVersion(user.getId());
         } catch (DuplicateKeyException e) {
             throw new RuntimeException("该用户名已被使用");
         }
-        return user;
+        return userMapper.findById(user.getId());
     }
 
     @Override
@@ -103,14 +103,15 @@ public class UserServiceImpl implements UserService {
         if (user.getPasswordHash() == null) {
             throw new RuntimeException("请设置密码后再登录");
         }
-        if (!user.getPasswordHash().equals(hashPassword(password))) {
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
             throw new RuntimeException("密码错误");
         }
-        // 登录时更新协议同意状态
+        // 登录时更新协议同意状态 + 递增 tokenVersion（使旧设备 token 失效，单设备登录）
         user.setAgreedPolicy(true);
         user.setAgreedAt(LocalDateTime.now());
         userMapper.update(user);
-        return user;
+        userMapper.incrementTokenVersion(user.getId());
+        return userMapper.findById(user.getId());
     }
 
     @Override
@@ -172,14 +173,16 @@ public class UserServiceImpl implements UserService {
         if (newPassword == null || newPassword.length() < 6) {
             throw new RuntimeException("新密码至少 6 位");
         }
-        if (!user.getPasswordHash().equals(hashPassword(oldPassword))) {
+        if (!passwordEncoder.matches(oldPassword, user.getPasswordHash())) {
             throw new RuntimeException("旧密码错误");
         }
         if (oldPassword.equals(newPassword)) {
             throw new RuntimeException("新密码不能与旧密码相同");
         }
-        user.setPasswordHash(hashPassword(newPassword));
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
         userMapper.update(user);
+        // 修改密码后递增 tokenVersion，使其他设备上的旧 token 立即失效
+        userMapper.incrementTokenVersion(userId);
         return userMapper.findById(userId);
     }
 
@@ -209,16 +212,6 @@ public class UserServiceImpl implements UserService {
         userMapper.deleteById(userId);
         log.info("管理员删除了用户 [{}] ({})", userId, user.getNickname());
         return true;
-    }
-
-    private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hash = md.digest(password.getBytes());
-            return HexFormat.of().formatHex(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Password hashing failed", e);
-        }
     }
 
     private void validateUsername(String username) {

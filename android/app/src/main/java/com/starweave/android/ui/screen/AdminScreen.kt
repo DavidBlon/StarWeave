@@ -4,9 +4,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -21,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import com.starweave.android.model.Message
 import com.starweave.android.model.User
 import com.starweave.android.model.Wish
+import com.starweave.android.ui.components.rememberIncrementalListState
 import com.starweave.android.ui.theme.StarColors
 import com.starweave.android.viewmodel.AdminState
 
@@ -42,6 +44,15 @@ fun AdminScreen(
     onClearError: () -> Unit
 ) {
     LaunchedEffect(adminId) { onLoadAll(adminId) }
+    LaunchedEffect(adminId, state.activeTab) {
+        when (state.activeTab) {
+            0 -> if (state.pendingMeteors.isEmpty()) onLoadAllMeteors(adminId, "pending")
+            1 -> if (state.pendingWishes.isEmpty()) onLoadAllWishes(adminId, "pending")
+            2 -> if (state.allMeteors.isEmpty()) onLoadAllMeteors(adminId, null)
+            3 -> if (state.allWishes.isEmpty()) onLoadAllWishes(adminId, null)
+            4 -> if (state.users.isEmpty()) onLoadUsers(adminId)
+        }
+    }
 
     val tabs = listOf("待审核流星", "待审核回复", "全部流星", "全部回复", "用户管理")
 
@@ -69,13 +80,6 @@ fun AdminScreen(
             tabs.forEachIndexed { i, label ->
                 Tab(selected = state.activeTab == i, onClick = {
                     onSetTab(i)
-                    when (i) {
-                        0 -> { /* pending already loaded */ }
-                        1 -> { /* pending wishes already loaded */ }
-                        2 -> onLoadAllMeteors(adminId, null)
-                        3 -> onLoadAllWishes(adminId, null)
-                        4 -> onLoadUsers(adminId)
-                    }
                 }, text = { Text(label, fontSize = 12.sp) })
             }
         }
@@ -118,11 +122,15 @@ private fun PendingMeteorsTab(meteors: List<Message>, adminId: Long,
     if (meteors.isEmpty()) {
         EmptyState("没有待审核的流星")
     } else {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            meteors.forEach { m ->
+        val incrementalState = rememberIncrementalListState(meteors.size, initialCount = 30, pageSize = 30)
+        LazyColumn(
+            state = incrementalState.listState,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(meteors.take(incrementalState.visibleCount), key = { it.id }) { m ->
                 AdminMeteorItem(m, adminId, onReview, onDelete)
-                Spacer(modifier = Modifier.height(8.dp))
             }
+            LoadMoreHint(incrementalState.hasMore)
         }
     }
 }
@@ -134,11 +142,15 @@ private fun PendingWishesTab(wishes: List<Wish>, adminId: Long,
     if (wishes.isEmpty()) {
         EmptyState("没有待审核的回复")
     } else {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            wishes.forEach { w ->
+        val incrementalState = rememberIncrementalListState(wishes.size, initialCount = 30, pageSize = 30)
+        LazyColumn(
+            state = incrementalState.listState,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(wishes.take(incrementalState.visibleCount), key = { it.id }) { w ->
                 AdminWishItem(w, adminId, onReview, onDelete)
-                Spacer(modifier = Modifier.height(8.dp))
             }
+            LoadMoreHint(incrementalState.hasMore)
         }
     }
 }
@@ -148,8 +160,12 @@ private fun AllMeteorsTab(meteors: List<Message>, adminId: Long, onDelete: (Long
     if (meteors.isEmpty()) {
         EmptyState("暂无流星")
     } else {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            meteors.forEach { m ->
+        val incrementalState = rememberIncrementalListState(meteors.size, initialCount = 30, pageSize = 30)
+        LazyColumn(
+            state = incrementalState.listState,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(meteors.take(incrementalState.visibleCount), key = { it.id }) { m ->
                 var confirmDelete by remember { mutableStateOf(false) }
                 Column(
                     modifier = Modifier.fillMaxWidth()
@@ -176,8 +192,8 @@ private fun AllMeteorsTab(meteors: List<Message>, adminId: Long, onDelete: (Long
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
             }
+            LoadMoreHint(incrementalState.hasMore)
         }
     }
 }
@@ -187,8 +203,12 @@ private fun AllWishesTab(wishes: List<Wish>, adminId: Long, onDelete: (Long, Lon
     if (wishes.isEmpty()) {
         EmptyState("暂无回复")
     } else {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            wishes.forEach { w ->
+        val incrementalState = rememberIncrementalListState(wishes.size, initialCount = 30, pageSize = 30)
+        LazyColumn(
+            state = incrementalState.listState,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(wishes.take(incrementalState.visibleCount), key = { it.id }) { w ->
                 var confirmDelete by remember { mutableStateOf(false) }
                 Column(
                     modifier = Modifier.fillMaxWidth()
@@ -214,8 +234,8 @@ private fun AllWishesTab(wishes: List<Wish>, adminId: Long, onDelete: (Long, Lon
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
             }
+            LoadMoreHint(incrementalState.hasMore)
         }
     }
 }
@@ -225,8 +245,12 @@ private fun UsersTab(users: List<User>, adminId: Long, onDelete: (Long, Long) ->
     if (users.isEmpty()) {
         EmptyState("暂无用户")
     } else {
-        Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-            users.forEach { u ->
+        val incrementalState = rememberIncrementalListState(users.size, initialCount = 30, pageSize = 30)
+        LazyColumn(
+            state = incrementalState.listState,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            items(users.take(incrementalState.visibleCount), key = { it.id }) { u ->
                 var confirmDelete by remember { mutableStateOf(false) }
                 Row(
                     modifier = Modifier.fillMaxWidth()
@@ -269,8 +293,8 @@ private fun UsersTab(users: List<User>, adminId: Long, onDelete: (Long, Long) ->
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(6.dp))
             }
+            LoadMoreHint(incrementalState.hasMore)
         }
     }
 }
@@ -383,5 +407,19 @@ private fun statusBorderColor(status: String) = when (status) {
 private fun EmptyState(text: String) {
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         Text(text, color = StarColors.TextTertiary, fontSize = 13.sp)
+    }
+}
+
+private fun LazyListScope.LoadMoreHint(hasMore: Boolean) {
+    if (hasMore) {
+        item {
+            Text(
+                "继续下滑加载更多",
+                color = StarColors.TextTertiary,
+                fontSize = 11.sp,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                textAlign = TextAlign.Center
+            )
+        }
     }
 }

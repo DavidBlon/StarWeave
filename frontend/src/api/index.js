@@ -1,9 +1,58 @@
 import axios from 'axios';
 
+const TOKEN_KEY = 'starweave_token';
+
 const api = axios.create({
   baseURL: '/api',
   timeout: 10000,
 });
+
+// ====== JWT 拦截器：自动附加 Authorization header ======
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// ====== 401 响应拦截器：token 过期或被踢下线 → 清除登录态 ======
+// 注意：必须检查引发 401 的 token 是否仍是当前 token。如果用户刚重新登录
+// 换了新 token，旧请求的 401 不能把新 token 一起清掉。
+api.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      const url = error.config?.url || '';
+      if (!url.includes('/captcha') && !url.includes('/user/login') && !url.includes('/user/register')) {
+        // 只清除与引发 401 的 token 一致的旧数据，不误伤新登录的 token
+        const failedToken = error.config?.headers?.Authorization?.replace('Bearer ', '') || '';
+        const currentToken = localStorage.getItem(TOKEN_KEY);
+        if (failedToken && failedToken === currentToken) {
+          const msg = error.response.data?.message || '账号已在其他设备登录，请重新登录';
+          clearToken();
+          localStorage.removeItem('starweave_user');
+          window.dispatchEvent(new CustomEvent('auth:expired', { detail: { message: msg } }));
+        }
+        // token 不匹配 → 说明是新登录后的旧请求到达，不做处理
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
+// ====== 存储 / 清除 token ======
+export const setToken = (token) => {
+  if (token) {
+    localStorage.setItem(TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+};
+
+export const getToken = () => localStorage.getItem(TOKEN_KEY);
+
+export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
 // ========== 验证码 ==========
 export const getCaptcha = () =>
@@ -33,6 +82,9 @@ export const uploadAvatarFile = (id, file) => {
 
 export const changePassword = (id, oldPassword, newPassword) =>
   api.post(`/user/${id}/password`, { oldPassword, newPassword }).then(r => r.data);
+
+export const logout = () =>
+  api.post('/user/logout').then(r => r.data);
 
 export const getUserStats = (id) =>
   api.get(`/user/${id}/stats`).then(r => r.data);

@@ -10,7 +10,9 @@ export default function MusicPlayer() {
     audio.loop = true;
     audio.volume = 0.35;
     // 尝试自动播放，浏览器可能会阻止
-    audio.play().then(() => setPlaying(true)).catch(() => {});
+    audio.play().then(() => setPlaying(true)).catch(e => {
+      console.warn('背景音乐自动播放被阻止（需用户交互触发）', e);
+    });
   }, []);
 
   const toggle = () => {
@@ -20,7 +22,9 @@ export default function MusicPlayer() {
       audio.pause();
       setPlaying(false);
     } else {
-      audio.play().then(() => setPlaying(true)).catch(() => {});
+      audio.play().then(() => setPlaying(true)).catch(e => {
+        console.warn('播放背景音乐失败', e);
+      });
     }
   };
 

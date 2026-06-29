@@ -69,10 +69,11 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public Message findRandomApproved(Long excludeUserId) {
-        long count = messageMapper.countApproved(excludeUserId);
-        if (count == 0) return null;
-        int offset = random.nextInt((int) count);
-        return messageMapper.findRandomApproved(offset, excludeUserId);
+        MessageMapper.IdRange range = messageMapper.findApprovedIdRange(excludeUserId);
+        if (range == null || range.minId() == 0) return null;
+        // 在 [minId, maxId] 范围内随机选一个起点，取第一条满足条件的流星
+        long targetId = range.minId() + (long) (random.nextDouble() * (range.maxId() - range.minId() + 1));
+        return messageMapper.findRandomApproved(targetId, excludeUserId);
     }
 
     @Override

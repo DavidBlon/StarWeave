@@ -24,7 +24,7 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
     setHistoryLoading(true);
     getCaughtMeteors(user.id).then(res => {
       if (res.code === 200) setHistory(res.data || []);
-    }).catch(() => {}).finally(() => setHistoryLoading(false));
+    }).catch(e => { console.error('加载捞取记录失败', e); }).finally(() => setHistoryLoading(false));
   }, [user?.id]);
 
   const doCatch = useCallback(async () => {
@@ -41,7 +41,7 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
         // 尝试捞取
         apiCatch(m.id, user.id).then(res => {
           if (res.code !== 200 && onShowToast) onShowToast(res.message || '未能捞起这颗流星');
-        }).catch(() => {});
+        }).catch(e => { console.error('捞取流星失败', e); });
         // 加载真实回复
         try {
           const wishesRes = await getWishes(m.id);
@@ -53,17 +53,18 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
             })));
             setWishCount(wishesRes.data.length);
           }
-        } catch (_) {}
+        } catch (e) { console.error('加载回复失败', e); }
       } else {
         onShowToast('星海暂无漂流中的流星');
       }
     } catch (e) {
+      console.error('捞取流星异常', e);
       onShowToast('星海暂无漂流中的流星');
     }
     // 刷新捞取记录
     getCaughtMeteors(user.id).then(res => {
       if (res.code === 200) setHistory(res.data || []);
-    }).catch(() => {});
+    }).catch(e => { console.error('刷新捞取记录失败', e); });
     setLoading(false);
   }, [user, onShowToast]);
 
@@ -79,7 +80,8 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
     try {
       await apiWish(meteor.id, user.id, text);
       setReplies(prev => prev.map(r => r.text === text && r.pending ? { ...r, pending: false } : r));
-    } catch (_) {
+    } catch (e) {
+      console.error('发送回复失败', e);
       // API 失败但保留本地显示
       setReplies(prev => prev.map(r => r.text === text && r.pending ? { ...r, pending: false } : r));
     }
@@ -88,7 +90,7 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
   const doWish = useCallback(async () => {
     if (!meteor) return;
     if (meteor.id) {
-      apiWish(meteor.id, user.id, '愿一切安好').catch(() => {});
+      apiWish(meteor.id, user.id, '愿一切安好').catch(e => { console.error('许愿失败', e); });
     }
     setWishCount(prev => prev + 1);
     onShowToast('愿望已送达星河');
@@ -192,7 +194,7 @@ export default function CatchPage({ user, onShowToast, onViewMeteor }) {
           setHistoryLoading(true);
           getCaughtMeteors(user.id).then(res => {
             if (res.code === 200) setHistory(res.data || []);
-          }).catch(() => {}).finally(() => setHistoryLoading(false));
+          }).catch(e => { console.error('加载捞取记录失败', e); }).finally(() => setHistoryLoading(false));
         }
       }}>
         捞取记录 ({history.length})

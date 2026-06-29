@@ -1,10 +1,14 @@
 package com.starweave.controller;
 
+import com.starweave.config.JwtUtil;
 import com.starweave.dto.ApiResponse;
+import com.starweave.dto.LoginResult;
 import com.starweave.dto.UserStats;
 import com.starweave.entity.User;
+import com.starweave.mapper.UserMapper;
 import com.starweave.service.CaptchaService;
 import com.starweave.service.UserService;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,17 +22,21 @@ public class UserController {
 
     private final UserService userService;
     private final CaptchaService captchaService;
+    private final JwtUtil jwtUtil;
+    private final UserMapper userMapper;
 
-    public UserController(UserService userService, CaptchaService captchaService) {
+    public UserController(UserService userService, CaptchaService captchaService, JwtUtil jwtUtil, UserMapper userMapper) {
         this.userService = userService;
         this.captchaService = captchaService;
+        this.jwtUtil = jwtUtil;
+        this.userMapper = userMapper;
     }
 
     /**
      * 密码注册
      */
     @PostMapping("/register")
-    public ApiResponse<User> register(@RequestBody Map<String, String> body) {
+    public ApiResponse<LoginResult> register(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String nickname = body.get("nickname");
         String password = body.get("password");
@@ -62,7 +70,9 @@ public class UserController {
 
         try {
             User user = userService.registerWithPassword(username, nickname, password);
-            return ApiResponse.success("注册成功", user);
+            int tv = user.getTokenVersion() != null ? user.getTokenVersion() : 0;
+            String token = jwtUtil.generateToken(user.getId(), tv);
+            return ApiResponse.success("注册成功", new LoginResult(user, token));
         } catch (RuntimeException e) {
             return ApiResponse.badRequest(e.getMessage());
         }
@@ -72,7 +82,7 @@ public class UserController {
      * 密码登录
      */
     @PostMapping("/login/password")
-    public ApiResponse<User> loginWithPassword(@RequestBody Map<String, String> body) {
+    public ApiResponse<LoginResult> loginWithPassword(@RequestBody Map<String, String> body) {
         String username = body.get("username");
         String password = body.get("password");
         String captchaId = body.get("captchaId");
@@ -91,7 +101,9 @@ public class UserController {
 
         try {
             User user = userService.loginWithPassword(username.strip(), password);
-            return ApiResponse.success("登录成功", user);
+            int tv = user.getTokenVersion() != null ? user.getTokenVersion() : 0;
+            String token = jwtUtil.generateToken(user.getId(), tv);
+            return ApiResponse.success("登录成功", new LoginResult(user, token));
         } catch (RuntimeException e) {
             return ApiResponse.badRequest(e.getMessage());
         }
@@ -184,8 +196,16 @@ public class UserController {
             return ApiResponse.badRequest("仅支持图片文件");
         }
         try {
-            // 保存到本地 uploads 目录
-            String filename = "avatar_" + id + "_" + System.currentTimeMillis() + "_" + file.getOriginalFilename();
+            // 安全清理原始文件名：只保留最后一段，移除路径分隔符和潜在危险字符
+            String originalName = file.getOriginalFilename();
+            String safeName = (originalName != null)
+                    ? originalName.substring(Math.max(originalName.lastIndexOf('/'), originalName.lastIndexOf('\\')) + 1)
+                         .replaceAll("[^a-zA-Z0-9._-]", "_")
+                    : "avatar";
+            if (safeName.isBlank() || ".".equals(safeName) || "..".equals(safeName)) {
+                safeName = "avatar.png";
+            }
+            String filename = "avatar_" + id + "_" + System.currentTimeMillis() + "_" + safeName;
             String uploadDir = System.getProperty("user.dir") + "/uploads/avatars/";
             java.io.File dir = new java.io.File(uploadDir);
             if (!dir.exists()) dir.mkdirs();
@@ -241,6 +261,20 @@ public class UserController {
         } catch (Exception e) {
             return org.springframework.http.ResponseEntity.internalServerError().build();
         }
+    }
+
+    /**
+     * 退出登录：递增 token_version，使当前 token 立即失效
+     * 无需请求体，从 JWT 中提取用户 ID
+     */
+    @PostMapping("/logout")
+    public ApiResponse<Void> logout() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !(auth.getPrincipal() instanceof Long userId)) {
+            return ApiResponse.badRequest("未登录");
+        }
+        userMapper.incrementTokenVersion(userId);
+        return ApiResponse.success("已退出登录", null);
     }
 
     @GetMapping("/list")

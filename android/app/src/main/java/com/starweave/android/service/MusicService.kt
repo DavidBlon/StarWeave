@@ -15,6 +15,7 @@ import com.starweave.android.StarWeaveApp
 class MusicService : Service() {
     private var mediaPlayer: MediaPlayer? = null
     private val binder = MusicBinder()
+    private val listeners = mutableSetOf<(Boolean) -> Unit>()
 
     inner class MusicBinder : Binder() {
         fun getService(): MusicService = this@MusicService
@@ -41,11 +42,13 @@ class MusicService : Service() {
 
     fun play() {
         mediaPlayer?.start()
+        notifyPlaybackChanged()
         startForeground(1, buildNotification(true))
     }
 
     fun pause() {
         mediaPlayer?.pause()
+        notifyPlaybackChanged()
         startForeground(1, buildNotification(false))
     }
 
@@ -54,6 +57,20 @@ class MusicService : Service() {
     }
 
     fun isPlaying(): Boolean = mediaPlayer?.isPlaying == true
+
+    fun addPlaybackListener(listener: (Boolean) -> Unit) {
+        listeners.add(listener)
+        listener(isPlaying())
+    }
+
+    fun removePlaybackListener(listener: (Boolean) -> Unit) {
+        listeners.remove(listener)
+    }
+
+    private fun notifyPlaybackChanged() {
+        val playing = isPlaying()
+        listeners.forEach { it(playing) }
+    }
 
     private fun buildNotification(playing: Boolean): Notification {
         val openIntent = PendingIntent.getActivity(

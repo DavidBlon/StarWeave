@@ -42,7 +42,7 @@ export default function AdminPage({ user, onShowToast }) {
       ]);
       if (pendingRes.code === 200) setPendingList(pendingRes.data || []);
       if (statsRes.code === 200) setStats(statsRes.data);
-    } catch (_) {}
+    } catch (e) { console.error('加载待审核流星失败', e); }
   }, [user?.id]);
 
   const loadPendingWishes = useCallback(async () => {
@@ -54,7 +54,7 @@ export default function AdminPage({ user, onShowToast }) {
       ]);
       if (pendingRes.code === 200) setPendingWishList(pendingRes.data || []);
       if (statsRes.code === 200) setWishStats(statsRes.data);
-    } catch (_) {}
+    } catch (e) { console.error('加载待审核回复失败', e); }
   }, [user?.id]);
 
   const loadAll = useCallback(async () => {
@@ -62,7 +62,7 @@ export default function AdminPage({ user, onShowToast }) {
     try {
       const res = await getAllMessages(user.id, null);
       if (res.code === 200) setAllList(res.data || []);
-    } catch (_) {}
+    } catch (e) { console.error('加载全部流星失败', e); }
   }, [user?.id]);
 
   const loadAllWishes = useCallback(async () => {
@@ -70,7 +70,7 @@ export default function AdminPage({ user, onShowToast }) {
     try {
       const res = await getAllWishes(user.id, null);
       if (res.code === 200) setAllWishList(res.data || []);
-    } catch (_) {}
+    } catch (e) { console.error('加载全部回复失败', e); }
   }, [user?.id]);
 
   const loadUsers = useCallback(async () => {
@@ -78,7 +78,7 @@ export default function AdminPage({ user, onShowToast }) {
     try {
       const res = await getAdminUsers(user.id);
       if (res.code === 200) setUserList(res.data || []);
-    } catch (_) {}
+    } catch (e) { console.error('加载用户列表失败', e); }
   }, [user?.id]);
 
   useEffect(() => {
@@ -106,7 +106,7 @@ export default function AdminPage({ user, onShowToast }) {
         toast(status === 'approved' ? '✦ 流星已通过' : '✧ 流星已拒绝');
         loadPending(); loadAll();
       } else { toast(res.message || '操作失败'); }
-    } catch (_) { toast('操作失败'); }
+    } catch (e) { console.error('审核流星失败', e); toast('操作失败'); }
     finally { setOperatingId(null); }
   };
 
@@ -118,7 +118,7 @@ export default function AdminPage({ user, onShowToast }) {
         toast(status === 'approved' ? '💜 回复已通过' : '✧ 回复已拒绝');
         loadPendingWishes(); loadAllWishes();
       } else { toast(res.message || '操作失败'); }
-    } catch (_) { toast('操作失败'); }
+    } catch (e) { console.error('审核回复失败', e); toast('操作失败'); }
     finally { setOperatingId(null); }
   };
 
@@ -130,7 +130,7 @@ export default function AdminPage({ user, onShowToast }) {
         toast('🗑 流星已删除');
         loadPending(); loadAll();
       } else { toast(res.message || '删除失败'); }
-    } catch (_) { toast('删除失败'); }
+    } catch (e) { console.error('删除流星失败', e); toast('删除失败'); }
     finally { setOperatingId(null); setConfirmDelete(null); }
   };
 
@@ -142,7 +142,7 @@ export default function AdminPage({ user, onShowToast }) {
         toast('🗑 回复已删除');
         loadPendingWishes(); loadAllWishes();
       } else { toast(res.message || '删除失败'); }
-    } catch (_) { toast('删除失败'); }
+    } catch (e) { console.error('删除回复失败', e); toast('删除失败'); }
     finally { setOperatingId(null); setConfirmDelete(null); }
   };
 
@@ -154,7 +154,7 @@ export default function AdminPage({ user, onShowToast }) {
         toast('🗑 用户已删除');
         loadUsers(); loadAll(); loadAllWishes(); loadPending(); loadPendingWishes();
       } else { toast(res.message || '删除失败'); }
-    } catch (_) { toast('删除失败'); }
+    } catch (e) { console.error('删除用户失败', e); toast('删除失败'); }
     finally { setOperatingId(null); setConfirmDelete(null); }
   };
 
