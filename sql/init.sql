@@ -188,7 +188,7 @@ INSERT IGNORE INTO `sponsor` (`display_name`, `message`, `border_style`, `amount
 --     注意：AdminInitializer 在启动时也会自动创建/迁移
 -- ============================================================
 INSERT IGNORE INTO `user` (`username`, `nickname`, `password_hash`, `bio`, `border_style`, `is_sponsor`, `is_admin`, `token_version`)
-VALUES ('admin', '管理员', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+VALUES ('admin', '管理员', '$2a$10$g85qJhZKVRN5K9SVy7SzFuVUIug6xTB3jJzZCx6XcXsrPFPhhARx6',
         '✦ 星海管理者', 'admin', 0, 1, 0);
 
 -- ============================================================
